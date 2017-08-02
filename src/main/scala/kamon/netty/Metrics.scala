@@ -17,127 +17,71 @@ package kamon.netty
  */
 
 import kamon.Kamon
-import kamon.util.MeasurementUnit._
 import kamon.metric._
+import kamon.util.MeasurementUnit._
 
 
 object Metrics {
 
   /**
     *
-    *  Metrics for Akka Actors:
+    * Metrics for Netty Event Loops:
     *
-    *    - time-in-mailbox: Time spent from the instant when a message is enqueued in an actor's mailbox to the instant when
-    *      that message is dequeued for processing.
-    *    - processing-time: Time taken for the actor to process the receive function.
-    *    - mailbox-size: Size of the actor's mailbox.
-    *    - errors: Number of errors seen by the actor's supervision mechanism.
+    *    - registered-channels:The number of registered Channels.
+    *    - last-io-processing-time: The number of milliseconds the last processing of all IO took..
+    *    - last-task-processing-time: The the number of milliseconds the last processing of all tasks took..
+    *    - last-processed-channels: The number of Channel's that where processed in the last run..
+    *    - last-processed-channels: The number of milliseconds the  EventLoop blocked before run to pick up IO and tasks.
     */
-  val actorTimeInMailboxMetric = Kamon.histogram("akka.actor.time-in-mailbox", time.nanoseconds)
-  val actorProcessingTimeMetric = Kamon.histogram("akka.actor.processing-time", time.nanoseconds)
-  val actorMailboxSizeMetric = Kamon.minMaxCounter("akka.actor.mailbox-size")
-  val actorErrorsMetric = Kamon.counter("akka.actor.errors")
+  val registeredChannelsMetric: MinMaxCounterMetric = Kamon.minMaxCounter("netty.event-loop.registered-channels")
+  val lastIoProcessingTimeMetric = Kamon.histogram("netty.event-loop.last-io-processing-time", time.nanoseconds)
+  val lastTaskProcessingTimeMetric = Kamon.histogram("netty.event-loop.last-task-processing-time", time.nanoseconds)
+  val lastProcessedChannelsMetric = Kamon.minMaxCounter("netty.event-loop.last-processed-channels")
+  val lastBlockingAmountMetric = Kamon.histogram("netty.event-loop.last-blocking-amount", time.nanoseconds)
 
-  def forActor(path: String): ActorMetrics = {
-    val actorTags = Map("path" -> path)
-    ActorMetrics(
-      actorTags,
-      actorTimeInMailboxMetric.refine(actorTags),
-      actorProcessingTimeMetric.refine(actorTags),
-      actorMailboxSizeMetric.refine(actorTags),
-      actorErrorsMetric.refine(actorTags)
+  def forEventLoop(name: String): EventLoopMetrics = {
+    val eventLoopTags = Map("name" -> name)
+    EventLoopMetrics(
+      eventLoopTags,
+      registeredChannelsMetric.refine(eventLoopTags),
+      lastIoProcessingTimeMetric.refine(eventLoopTags),
+      lastTaskProcessingTimeMetric.refine(eventLoopTags),
+      lastProcessedChannelsMetric.refine(eventLoopTags),
+      lastBlockingAmountMetric.refine(eventLoopTags)
     )
   }
 
-  case class ActorMetrics(tags: Map[String, String], timeInMailbox: Histogram, processingTime: Histogram,
-                          mailboxSize: MinMaxCounter, errors: Counter) {
+  case class EventLoopMetrics(tags: Map[String, String], registeredChannels: MinMaxCounter, ioProcessingTime: Histogram,
+                              taskProcessingTime: Histogram, channelProcessed: MinMaxCounter, blockingAmount: Histogram) {
 
     def cleanup(): Unit = {
-      actorTimeInMailboxMetric.remove(tags)
-      actorProcessingTimeMetric.remove(tags)
-      actorMailboxSizeMetric.remove(tags)
-      actorErrorsMetric.remove(tags)
+      registeredChannelsMetric.remove(tags)
+      lastIoProcessingTimeMetric.remove(tags)
+      lastTaskProcessingTimeMetric.remove(tags)
+      lastProcessedChannelsMetric.remove(tags)
+      lastBlockingAmountMetric.remove(tags)
     }
   }
 
 
   /**
     *
-    *  Metrics for Akka Routers.
+    *  Metrics for Netty EventExecutor.
     *
-    *    - routing-time: Time taken for the router to process the routing logic.
-    *    - time-in-mailbox: Time spent from the instant when a message is enqueued in an actor's mailbox to the instant when
-    *      that message is dequeued for processing.
-    *    - processing-time: Time taken for the actor to process the receive function.
-    *    - errors: Number or errors seen by the actor's supervision mechanism.
+    *    - pending-tasks: The number of tasks that are pending for processing.
     */
-  val routerRoutingTime = Kamon.histogram("akka.router.routing-time", time.nanoseconds)
-  val routerTimeInMailbox = Kamon.histogram("akka.router.time-in-mailbox", time.nanoseconds)
-  val routerProcessingTime = Kamon.histogram("akka.router.processing-time", time.nanoseconds)
-  val routerErrors = Kamon.counter("akka.router.errors")
+  val pendingTasksMetric = Kamon.minMaxCounter("netty.event-executor.pending-tasks")
 
-  def forRouter(path: String): RouterMetrics = {
-    val routerTags = Map("path" -> path)
-    RouterMetrics(
-      routerTags,
-      routerRoutingTime.refine(routerTags),
-      routerTimeInMailbox.refine(routerTags),
-      routerProcessingTime.refine(routerTags),
-      routerErrors.refine(routerTags)
-    )
+
+  def forEventExecutor(name: String): EventExecutorMetrics = {
+    val routerTags = Map("name" -> name)
+    EventExecutorMetrics(routerTags, pendingTasksMetric.refine(routerTags))
   }
 
-  case class RouterMetrics(tags: Map[String, String], routingTime: Histogram, timeInMailbox: Histogram,
-                           processingTime: Histogram, errors: Counter) {
+  case class EventExecutorMetrics(tags: Map[String, String], pendingTasks: MinMaxCounter) {
 
     def cleanup(): Unit = {
-      routerRoutingTime.remove(tags)
-      routerTimeInMailbox.remove(tags)
-      routerProcessingTime.remove(tags)
-      routerErrors.remove(tags)
-    }
-  }
-
-
-  /**
-    *
-    *  Metrics for Groups. Sums across all actors in the Actor Group.
-    *  The metrics being tracked are:
-    *
-    *    - time-in-mailbox: Time spent from the instant when a message is enqueued in an actor's mailbox to the instant when
-    *      that message is dequeued for processing.
-    *    - processing-time: Time taken for the actor to process the receive function.
-    *    - members: Number of group members that have been created.
-    *    - mailbox-size: Size of the actor's mailbox.
-    *    - errors: Number of errors seen by the actor's supervision mechanism.
-    */
-  val groupTimeInMailbox = Kamon.histogram("akka.group.time-in-mailbox", time.nanoseconds)
-  val groupProcessingTime = Kamon.histogram("akka.group.processing-time", time.nanoseconds)
-  val groupMailboxSize = Kamon.minMaxCounter("akka.group.mailbox-size")
-  val groupMembers = Kamon.minMaxCounter("akka.group.members")
-  val groupErrors = Kamon.counter("akka.group.errors")
-
-  def forGroup(group: String): ActorGroupMetrics = {
-    val actorTags = Map("group" -> group)
-    ActorGroupMetrics(
-      actorTags,
-      groupTimeInMailbox.refine(actorTags),
-      groupProcessingTime.refine(actorTags),
-      groupMailboxSize.refine(actorTags),
-      groupMembers.refine(actorTags),
-      groupErrors.refine(actorTags)
-    )
-  }
-
-  case class ActorGroupMetrics(tags: Map[String, String], timeInMailbox: Histogram, processingTime: Histogram,
-                               mailboxSize: MinMaxCounter, members: MinMaxCounter, errors: Counter) {
-
-    def cleanup(): Unit = {
-      groupTimeInMailbox.remove(tags)
-      groupProcessingTime.remove(tags)
-      groupMailboxSize.remove(tags)
-      groupMembers.remove(tags)
-      groupErrors.remove(tags)
+      pendingTasksMetric.remove(tags)
     }
   }
 }
