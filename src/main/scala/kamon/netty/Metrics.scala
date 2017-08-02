@@ -1,5 +1,3 @@
-package kamon.netty
-
 /*
  * =========================================================================================
  * Copyright © 2013-2017 the kamon project <http://kamon.io/>
@@ -15,6 +13,8 @@ package kamon.netty
  * and limitations under the License.
  * =========================================================================================
  */
+
+package kamon.netty
 
 import kamon.Kamon
 import kamon.metric._
@@ -33,10 +33,10 @@ object Metrics {
     *    - last-processed-channels: The number of Channel's that where processed in the last run..
     *    - last-processed-channels: The number of milliseconds the  EventLoop blocked before run to pick up IO and tasks.
     */
-  val registeredChannelsMetric: MinMaxCounterMetric = Kamon.minMaxCounter("netty.event-loop.registered-channels")
+  val registeredChannelsMetric = Kamon.gauge("netty.event-loop.registered-channels")
   val lastIoProcessingTimeMetric = Kamon.histogram("netty.event-loop.last-io-processing-time", time.nanoseconds)
   val lastTaskProcessingTimeMetric = Kamon.histogram("netty.event-loop.last-task-processing-time", time.nanoseconds)
-  val lastProcessedChannelsMetric = Kamon.minMaxCounter("netty.event-loop.last-processed-channels")
+  val lastProcessedChannelsMetric = Kamon.gauge("netty.event-loop.last-processed-channels")
   val lastBlockingAmountMetric = Kamon.histogram("netty.event-loop.last-blocking-amount", time.nanoseconds)
 
   def forEventLoop(name: String): EventLoopMetrics = {
@@ -51,8 +51,8 @@ object Metrics {
     )
   }
 
-  case class EventLoopMetrics(tags: Map[String, String], registeredChannels: MinMaxCounter, ioProcessingTime: Histogram,
-                              taskProcessingTime: Histogram, channelProcessed: MinMaxCounter, blockingAmount: Histogram) {
+  case class EventLoopMetrics(tags: Map[String, String], registeredChannels: Gauge, ioProcessingTime: Histogram,
+                              taskProcessingTime: Histogram, channelProcessed: Gauge, blockingAmount: Histogram) {
 
     def cleanup(): Unit = {
       registeredChannelsMetric.remove(tags)
@@ -70,7 +70,7 @@ object Metrics {
     *
     *    - pending-tasks: The number of tasks that are pending for processing.
     */
-  val pendingTasksMetric = Kamon.minMaxCounter("netty.event-executor.pending-tasks")
+  val pendingTasksMetric = Kamon.gauge("netty.event-executor.pending-tasks")
 
 
   def forEventExecutor(name: String): EventExecutorMetrics = {
@@ -78,7 +78,7 @@ object Metrics {
     EventExecutorMetrics(routerTags, pendingTasksMetric.refine(routerTags))
   }
 
-  case class EventExecutorMetrics(tags: Map[String, String], pendingTasks: MinMaxCounter) {
+  case class EventExecutorMetrics(tags: Map[String, String], pendingTasks: Gauge) {
 
     def cleanup(): Unit = {
       pendingTasksMetric.remove(tags)
