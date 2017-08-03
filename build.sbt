@@ -20,6 +20,7 @@ val kamonExecutors    = "io.kamon"    %% "kamon-executors"              % "1.0.0
 val scalaExtension    = "io.kamon"    %% "agent-scala-extension"        % "0.0.3-experimental"
 
 val netty             = "io.netty"    %  "netty-all"                    % "4.0.49.Final"
+val logback           = "ch.qos.logback"            %   "logback-classic"       % "1.0.13"
 
 
 lazy val root = (project in file("."))
@@ -27,9 +28,10 @@ lazy val root = (project in file("."))
   .enablePlugins(JavaAgent)
   .settings(isSnapshot := true)
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
-  .settings(javaAgents += "io.kamon"    % "kamon-agent"   % "0.0.3-experimental"  % "compile;test")
+//  .settings(javaAgents += "io.kamon"    % "kamon-agent"   % "0.0.3-experimental"  % "compile;test")
+  .settings(javaAgents += "org.aspectj"    % "aspectjweaver"   % "1.8.10"  % "compile;test;runtime")
   .settings(
     libraryDependencies ++=
-      compileScope(kamonCore, kamonExecutors, scalaExtension) ++
-      providedScope(netty) ++
+      compileScope(kamonCore, kamonExecutors, scalaExtension, netty, logback) ++
+//      providedScope(netty) ++
       testScope(scalatest, logbackClassic))
