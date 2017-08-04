@@ -32,7 +32,7 @@ class EpollEventLoopInstrumentation {
   def onRunAllTasks(pjp:ProceedingJoinPoint, eventLoop: EventExecutor): Any = {
     if(eventLoop.getClass.isAssignableFrom(EpollEventLoopClass)) {
       val processingTime = Metrics.forEventLoop(name(eventLoop)).taskProcessingTime
-      println("processAll")
+//      println("processAll")
       Latency.measure(processingTime)(pjp.proceed())
     } else pjp.proceed()
   }

@@ -18,7 +18,6 @@ package kamon.netty.instrumentation
 
 import io.netty.channel.nio.NioEventLoop
 import io.netty.channel.{ChannelFuture, ChannelFutureListener}
-import io.netty.util.concurrent.EventExecutor
 import kamon.metric.Gauge
 import kamon.netty.Metrics
 import kamon.netty.util.Latency
@@ -33,7 +32,7 @@ class NioEventLoopInstrumentation {
   @Around("execution(* io.netty.util.concurrent.SingleThreadEventExecutor+.runAllTasks(..)) && this(eventLoop)")
   def onRunAllTasks(pjp:ProceedingJoinPoint, eventLoop: NioEventLoop): Any = {
     val processingTime = Metrics.forEventLoop(name(eventLoop)).taskProcessingTime
-    println("processAll")
+//    println("processAll")
     Latency.measure(processingTime)(pjp.proceed())
   }
 
