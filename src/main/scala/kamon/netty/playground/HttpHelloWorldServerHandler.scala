@@ -44,5 +44,5 @@ class HttpHelloWorldServerHandler extends ChannelInboundHandlerAdapter {
 
 object HttpHelloWorldServerHandler {
   private final val CONTENT =
-    Unpooled.unreleasableBuffer(Unpooled.copiedBuffer("Hello World", CharsetUtil.US_ASCII))
+    Unpooled.unreleasableBuffer(Unpooled.copiedBuffer("Hello World jaklfjal jsflkasflkj askl", CharsetUtil.US_ASCII))
 }

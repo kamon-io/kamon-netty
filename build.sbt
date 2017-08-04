@@ -19,7 +19,9 @@ val kamonExecutors    = "io.kamon"    %% "kamon-executors"              % "1.0.0
 
 val scalaExtension    = "io.kamon"    %% "agent-scala-extension"        % "0.0.3-experimental"
 
-val netty             = "io.netty"    %  "netty-all"                    % "4.0.49.Final"
+val netty             = "io.netty"    %  "netty-all"                    % "4.0.50.Final"
+val nettyNative       ="io.netty"     % "netty-transport-native-epoll"  % "4.0.50.Final" classifier "linux-x86_64"
+
 val logback           = "ch.qos.logback"            %   "logback-classic"       % "1.0.13"
 
 
@@ -32,6 +34,6 @@ lazy val root = (project in file("."))
   .settings(javaAgents += "org.aspectj"    % "aspectjweaver"   % "1.8.10"  % "compile;test;runtime")
   .settings(
     libraryDependencies ++=
-      compileScope(kamonCore, kamonExecutors, scalaExtension, netty, logback) ++
-//      providedScope(netty) ++
+      compileScope(kamonCore, kamonExecutors, scalaExtension, netty, logback, nettyNative) ++
+//      providedScope(netty, nettyNative) ++
       testScope(scalatest, logbackClassic))

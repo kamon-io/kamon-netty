@@ -14,19 +14,26 @@
  * =========================================================================================
  */
 
-package kamon.netty
+package kamon.netty.instrumentation
 
-import com.typesafe.config.Config
-import kamon.Kamon
+import io.netty.util.concurrent.EventExecutor
+import org.aspectj.lang.annotation._
 
-object Netty {
 
-  loadConfiguration(Kamon.config())
+trait NamedEventLoopGroup {
+  var name:String = _
+}
 
-  Kamon.onReconfigure((newConfig: Config) => Netty.loadConfiguration(newConfig))
+@Aspect
+class EventLoopMixin {
 
-  private def loadConfiguration(config: Config): Unit = synchronized {
-    val nettyConfig = config.getConfig("kamon.netty")
-    println("------------------------------->> " + nettyConfig)
+  @DeclareMixin("io.netty.channel.EventLoopGroup+")
+  def mixinEventLoopGroupWithNamedEventLoopGroup: NamedEventLoopGroup = new NamedEventLoopGroup {}
+}
+
+object EventLoopUtils {
+  def name(eventLoop: EventExecutor): String = {
+    val sanitize:String => String = str => str.replaceAll("(.)(\\p{Upper})", "$1-$2").toLowerCase()
+    s"${eventLoop.parent().asInstanceOf[NamedEventLoopGroup].name}-${sanitize(eventLoop.getClass.getSimpleName)}"
   }
 }

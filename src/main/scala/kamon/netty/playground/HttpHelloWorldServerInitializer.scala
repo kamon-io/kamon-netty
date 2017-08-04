@@ -10,7 +10,7 @@ class HttpHelloWorldServerInitializer extends ChannelInitializer[SocketChannel] 
   def initChannel(ch: SocketChannel): Unit = {
     val p = ch.pipeline()
 
-    p.addLast("logger", new LoggingHandler())
+//    p.addLast("logger", new LoggingHandler())
     p.addLast("codec", new HttpServerCodec())
     p.addLast("handler", new HttpHelloWorldServerHandler())
   }
