@@ -1,7 +1,9 @@
 package kamon.netty.playground
 
-import io.netty.buffer.Unpooled
-import io.netty.channel.{ChannelHandlerContext, ChannelInboundHandlerAdapter}
+import java.net.SocketAddress
+
+import io.netty.buffer.{ByteBufAllocator, Unpooled}
+import io.netty.channel._
 import io.netty.handler.codec.http.HttpHeaders.Names._
 import io.netty.handler.codec.http.HttpHeaders._
 import io.netty.handler.codec.http.HttpResponseStatus._
@@ -33,6 +35,7 @@ class HttpHelloWorldServerHandler extends ChannelInboundHandlerAdapter {
     }
 
   override def channelReadComplete(ctx: ChannelHandlerContext): Unit = {
+//    println(s"channelReadComplete .... ${ctx.channel().hashCode()}")
     ctx.flush()
   }
 

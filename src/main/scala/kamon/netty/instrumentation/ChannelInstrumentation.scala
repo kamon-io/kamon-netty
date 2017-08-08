@@ -17,29 +17,36 @@
 package kamon.netty.instrumentation
 
 import io.netty.channel.{ChannelHandlerContext, ChannelPromise}
-import io.netty.handler.codec.http.{HttpRequest, LastHttpContent}
+import io.netty.handler.codec.http.{HttpRequest, HttpResponse, LastHttpContent}
 import kamon.Kamon
 import kamon.trace.SpanContextCodec.Format
-import kamon.trace.TextMap
-import kamon.util.HasSpan
+import kamon.trace.{Span, TextMap}
+import kamon.util.{Clock, HasSpan}
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation._
+
+
+trait TimeAware {
+  @volatile var _startTime:Long = 0
+  @volatile var  span: Span = _
+}
 
 @Aspect
 class ChannelInstrumentation {
 
   @DeclareMixin("io.netty.channel.Channel+")
-  def mixinHasSpanToChannel: HasSpan =  HasSpan.fromActiveSpan()
+  def mixinHasSpanToTimeAware: TimeAware =  new TimeAware{}
 
 
-  @Before("execution(* io.netty.channel.ChannelHandlerContext+.fireChannelRead(..)) && args(request)")
-  def onFireChannelRead(request: HttpRequest): Unit = {
-    val incomingSpanContext = Kamon.extract(Format.HttpHeaders, readOnlyTextMapFromHttpRequest(request))
-    Kamon.buildSpan("unknown-operation")
-      .asChildOf(incomingSpanContext)
-      .withSpanTag("span.king", "server")
-      .start()
+  @Before("execution(* io.netty.channel.ChannelHandlerContext+.fireChannelRead(..)) && this(ctx) && args(request)")
+  def onFireChannelRead(ctx:TimeAware ,request: HttpRequest): Unit = {
+      ctx._startTime = Clock.microTimestamp()
+//    val incomingSpanContext = Kamon.extract(Format.HttpHeaders, readOnlyTextMapFromHttpRequest(request))
+//    Kamon.buildSpan("unknown-operation")
+//      .asChildOf(incomingSpanContext)
+//      .withSpanTag("span.king", "server")
 //      .start()
+////      .start()
   }
 
 
@@ -50,6 +57,31 @@ class ChannelInstrumentation {
     override def values: Iterator[(String, String)] = request.headers.iterator().asScala.map(x => (x.getKey,x.getValue))
     override def get(key: String): Option[String] = None
     override def put(key: String, value: String): Unit = {}
+  }
+
+//  @After("execution(* io.netty.handler.codec.http.HttpObjectDecoder.decode(..)) && args(ctx, *, out)")
+  @After("execution(* io.netty.handler.codec.http.HttpServerCodec.HttpServerRequestDecoder.decode(..)) && args(ctx, *, out)")
+    def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[Object]): Unit = {
+      if(out.size() > 0 && out.get(0).isInstanceOf[HttpRequest]) {
+        val httpRequest = out.get(0).asInstanceOf[HttpRequest]
+        val incomingSpanContext = Kamon.extract(Format.HttpHeaders, readOnlyTextMapFromHttpRequest(httpRequest))
+          val span = Kamon.buildSpan(httpRequest.getUri)
+            .asChildOf(incomingSpanContext)
+            .withSpanTag("span.kind", "server")
+            .withStartTimestamp(ctx.channel().asInstanceOf[TimeAware]._startTime)
+            .start()
+
+        span.context().baggage.add("request-uri", httpRequest.getUri)
+        ctx.channel().asInstanceOf[TimeAware].span = span
+        println("ON Decode SpanID =>"  + span.context().spanID + " TraceId => "+ span.context().traceID)
+      }
+    }
+
+  @After("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, msg, *)")
+  def onEncodeResponse(ctx: ChannelHandlerContext,  msg:HttpResponse): Unit = {
+      val hasSpan = ctx.channel().asInstanceOf[TimeAware]
+      hasSpan.span.finish()
+      println("ON Encode SpanID =>"  + hasSpan.span.context().spanID + " TraceId => "+ hasSpan.span.context().traceID + "name: =>" + hasSpan.span.context().baggage.get("request-uri"))
   }
 
 //  val incomingSpanContext = Kamon.extract(HTTP_HEADERS, readOnlyTextMapFromHttpRequest(request))
@@ -86,22 +118,22 @@ class ChannelInstrumentation {
 
 
 
-  @After("execution(* io.netty.channel.ChannelHandlerContext+.fireChannelReadComplete(..)) && this(channelHandlerContext)")
-  def onFireChannelReadComplete(channelHandlerContext:ChannelHandlerContext): Unit = {
-//    if(channelHandlerContext.span != null) channelHandlerContext.span.star
-      println("cacacacacaca1")
+//  @After("execution(* io.netty.channel.ChannelHandlerContext+.fireChannelReadComplete(..)) && this(channelHandlerContext)")
+//  def onFireChannelReadComplete(channelHandlerContext:ChannelHandlerContext): Unit = {
+////    if(channelHandlerContext.span != null) channelHandlerContext.span.star
+//      println("cacacacacaca1")
+////    }
+////    pjp.proceed()
+//  }
+//
+//  @Before("execution(* io.netty.channel.ChannelOutboundHandler+.write(..)) && args(ctx, httpContent, *)")
+//  def onWrite(ctx: ChannelHandlerContext, httpContent: LastHttpContent): Unit = {
+//    val channel = ctx.channel().asInstanceOf[HasSpan]
+//    if(httpContent != null && channel.span != null) {
+//      channel.span.finish()
+//      println("puto")
 //    }
-//    pjp.proceed()
-  }
-
-  @Before("execution(* io.netty.channel.ChannelOutboundHandler+.write(..)) && args(ctx, httpContent, *)")
-  def onWrite(ctx: ChannelHandlerContext, httpContent: LastHttpContent): Unit = {
-    val channel = ctx.channel().asInstanceOf[HasSpan]
-    if(httpContent != null && channel.span != null) {
-      channel.span.finish()
-      println("puto")
-    }
-  }
+//  }
 
 //  @Pointcut(className = "io.netty.channel.ChannelOutboundHandler", methodName = "write",
 //    methodParameterTypes = {"io.netty.channel.ChannelHandlerContext",
@@ -109,3 +141,5 @@ class ChannelInstrumentation {
 //  public static class OutboundAdvice {
 
   }
+
+
