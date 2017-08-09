@@ -18,6 +18,7 @@ object TestSpanPropagation extends App {
   val workerGroup = new NioEventLoopGroup
 
   try {
+    val requestGenerator = new RequestGenerator()
     val boot = new Bootstrap()
     boot.group(workerGroup)
       .channel(classOf[NioSocketChannel])
@@ -26,7 +27,7 @@ object TestSpanPropagation extends App {
           val p = ch.pipeline()
           p.addLast(new HttpClientCodec())
 //          p.addLast(new HttpObjectAggregator(MAX_CONTENT_LENGTH))
-          p.addLast(new HttpClientHandler())
+          p.addLast(new HttpClientHandler(requestGenerator))
         }
       })
       .option[lang.Boolean](ChannelOption.SO_KEEPALIVE, true)
@@ -39,20 +40,12 @@ object TestSpanPropagation extends App {
     val ch  = boot.connect(host, port).sync().channel()
 
     // Send the HTTP request N times.
-    callN(ch, buildRequest(host))(5)
+    callN(ch, requestGenerator.buildRequest(host))(5)
 
     ch.closeFuture().sync()
     println("client exit")
   } finally {
     workerGroup.shutdownGracefully()
-  }
-
-  private def buildRequest(host: String) = {
-    val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/")
-    request.headers().set(HttpHeaders.Names.HOST, host)
-    request.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE)
-    request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP)
-    request
   }
 
   @tailrec
@@ -64,21 +57,37 @@ object TestSpanPropagation extends App {
   }
 }
 
-class HttpClientHandler extends SimpleChannelInboundHandler[HttpObject] {
+class HttpClientHandler(requestGenerator: RequestGenerator) extends SimpleChannelInboundHandler[HttpObject] {
   import scala.collection.JavaConverters._
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: HttpObject): Unit = {
 
     if (msg.isInstanceOf[HttpResponse]) {
       val response = msg.asInstanceOf[HttpResponse]
-      println("STATUS: " + response.getStatus)
-      println("VERSION: " + response.getProtocolVersion)
-      if (!response.headers.isEmpty) {
-        for {
-          name <- response.headers.names.asScala
-          value <- response.headers.getAll(name).asScala
-        } println("HEADER: " + name + " = " + value)
-      }
+
+      println(s"Response: $response")
+
+      response.headers.names.asScala
+        .find(_ == requestGenerator.HeaderKamonTest)
+        .orElse({
+          println(s"Doesn't get a value for header ${requestGenerator.HeaderKamonTest}.")
+          None
+        })
+        .map(name => {
+          val values = response.headers.getAll(name).asScala
+          if (values.size > 1) println(s"Get more than 1 value for header ${requestGenerator.HeaderKamonTest}. Values: ${values mkString ","}")
+          values
+        })
+        .foreach(value => {
+          val isTheSame = value.toString() == requestGenerator.nextSequence.toString
+          s"Get the same request sequence: $isTheSame. Seq expected: ${requestGenerator.nextSequence}. Seq received: $value"
+        })
+//      if (!response.headers.isEmpty) {
+//        for {
+//          name <- response.headers.names.asScala
+//          value <- response.headers.getAll(name).asScala
+//        } println("HEADER: " + name + " = " + value)
+//      }
       if (HttpHeaders.isTransferEncodingChunked(response)) println("CHUNKED CONTENT {")
       else println("CONTENT {")
     }
@@ -95,5 +104,23 @@ class HttpClientHandler extends SimpleChannelInboundHandler[HttpObject] {
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
     cause.printStackTrace()
     ctx.close
+  }
+}
+
+class RequestGenerator() {
+
+  val HeaderKamonTest = "kamon-test-sequence"
+  private def computeNextSequence = scala.util.Random.nextInt(10000)
+  val nextSequence: Int = computeNextSequence
+
+  def buildRequest(host: String, keepAlive: Boolean = true): FullHttpRequest = {
+    computeNextSequence
+    val keepAliveValue = if (keepAlive) HttpHeaders.Values.KEEP_ALIVE else HttpHeaders.Values.CLOSE
+    val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/")
+    request.headers().set(HeaderKamonTest, nextSequence)
+    request.headers().set(HttpHeaders.Names.HOST, host)
+    request.headers().set(HttpHeaders.Names.CONNECTION, keepAliveValue)
+    request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP)
+    request
   }
 }
