@@ -25,21 +25,21 @@ import kamon.netty.instrumentation.EventLoopUtils.name
 
 class MonitoredQueue(eventLoop:EventLoop, underlying:util.Queue[Runnable]) extends QueueWrapperAdapter[Runnable](underlying) {
 
-  implicit lazy val metrics: EventLoopMetrics = Metrics.forEventLoop(name(eventLoop))
+  implicit lazy val eventLoopMetrics: EventLoopMetrics = Metrics.forEventLoop(name(eventLoop))
 
   override def add(runnable: Runnable): Boolean = {
-    metrics.pendingTasks.increment()
+    eventLoopMetrics.taskQueueSize.increment()
     underlying.add(new TimedTask(runnable))
   }
 
   override def offer(runnable: Runnable): Boolean = {
-    metrics.pendingTasks.increment()
+    eventLoopMetrics.taskQueueSize.increment()
     underlying.offer(new TimedTask(runnable))
   }
 
   override def remove(): Runnable = {
     val runnable = underlying.remove()
-    metrics.pendingTasks.decrement()
+    eventLoopMetrics.taskQueueSize.decrement()
     runnable
   }
 
@@ -47,7 +47,7 @@ class MonitoredQueue(eventLoop:EventLoop, underlying:util.Queue[Runnable]) exten
     val runnable = underlying.poll()
 
     if(runnable != null) {
-      metrics.pendingTasks.decrement()
+      eventLoopMetrics.taskQueueSize.decrement()
     }
     runnable
   }
