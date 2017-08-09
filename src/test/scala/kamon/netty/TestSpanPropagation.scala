@@ -1,5 +1,7 @@
 package kamon.netty
 
+import java.lang
+
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel._
 import io.netty.channel.nio.NioEventLoopGroup
@@ -8,8 +10,11 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.{HttpContent, LastHttpContent, _}
 import io.netty.util.CharsetUtil
 
+import scala.annotation.tailrec
+
 object TestSpanPropagation extends App {
 
+  val MAX_CONTENT_LENGTH = 1000
   val workerGroup = new NioEventLoopGroup
 
   try {
@@ -20,10 +25,11 @@ object TestSpanPropagation extends App {
         def initChannel(ch: SocketChannel) {
           val p = ch.pipeline()
           p.addLast(new HttpClientCodec())
+//          p.addLast(new HttpObjectAggregator(MAX_CONTENT_LENGTH))
           p.addLast(new HttpClientHandler())
         }
       })
-      .option[java.lang.Boolean](ChannelOption.SO_KEEPALIVE, true)
+      .option[lang.Boolean](ChannelOption.SO_KEEPALIVE, true)
 
     println("connect to server")
 
@@ -32,18 +38,29 @@ object TestSpanPropagation extends App {
 
     val ch  = boot.connect(host, port).sync().channel()
 
-    val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/")
-    request.headers().set(HttpHeaders.Names.HOST, host)
-    request.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE)
-    request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP)
-
-    // Send the HTTP request.
-    ch.writeAndFlush(request)
+    // Send the HTTP request N times.
+    callN(ch, buildRequest(host))(5)
 
     ch.closeFuture().sync()
     println("client exit")
   } finally {
     workerGroup.shutdownGracefully()
+  }
+
+  private def buildRequest(host: String) = {
+    val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/")
+    request.headers().set(HttpHeaders.Names.HOST, host)
+    request.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE)
+    request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP)
+    request
+  }
+
+  @tailrec
+  def callN(channel: Channel, request: => FullHttpRequest)(count: Int): Unit = {
+    if (count >= 0) {
+      channel.writeAndFlush(request).sync()
+      callN(channel, request)(count - 1)
+    } else channel.close().sync()
   }
 }
 
@@ -62,15 +79,15 @@ class HttpClientHandler extends SimpleChannelInboundHandler[HttpObject] {
           value <- response.headers.getAll(name).asScala
         } println("HEADER: " + name + " = " + value)
       }
-//      if (HttpUtil.isTransferEncodingChunked(response)) System.err.println("CHUNKED CONTENT {")
-//      else System.err.println("CONTENT {")
+      if (HttpHeaders.isTransferEncodingChunked(response)) println("CHUNKED CONTENT {")
+      else println("CONTENT {")
     }
     if (msg.isInstanceOf[HttpContent]) {
       val content = msg.asInstanceOf[HttpContent]
       println(content.content.toString(CharsetUtil.UTF_8))
       if (content.isInstanceOf[LastHttpContent]) {
-        println("END OF CONTENT")
-        ctx.close
+        println("} END OF CONTENT")
+//        ctx.close
       }
     }
   }
