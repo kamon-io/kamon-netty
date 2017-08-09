@@ -9,16 +9,33 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.{HttpContent, LastHttpContent, _}
 import io.netty.util.CharsetUtil
+import io.netty.util.concurrent.GenericFutureListener
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 
 object TestSpanPropagation extends App {
 
   val MAX_CONTENT_LENGTH = 1000
-  val workerGroup = new NioEventLoopGroup
+  val workerGroup = new NioEventLoopGroup(10)
+
+  val host = "127.0.0.1"
+  val port = 8080
+
+  val parallel = 3
+  val count = 10
 
   try {
-    val requestGenerator = new RequestGenerator()
+    val channels: Seq[ChannelFuture] = (1 to parallel).map(i => taskThread())
+    channels.foreach(_.channel().closeFuture().syncUninterruptibly())
+    println("Test finished successfully!")
+  } finally {
+    workerGroup.shutdownGracefully()
+  }
+
+  private def taskThread(): ChannelFuture = {
+    val requestGenerator = new RequestGenerator(host, count)
+    println(s"Creating Bootstrap...")
     val boot = new Bootstrap()
     boot.group(workerGroup)
       .channel(classOf[NioSocketChannel])
@@ -26,34 +43,19 @@ object TestSpanPropagation extends App {
         def initChannel(ch: SocketChannel) {
           val p = ch.pipeline()
           p.addLast(new HttpClientCodec())
-//          p.addLast(new HttpObjectAggregator(MAX_CONTENT_LENGTH))
+          //          p.addLast(new HttpObjectAggregator(MAX_CONTENT_LENGTH))
           p.addLast(new HttpClientHandler(requestGenerator))
         }
       })
       .option[lang.Boolean](ChannelOption.SO_KEEPALIVE, true)
 
-    println("connect to server")
+    println("Connect to server")
 
-    val host = "127.0.0.1"
-    val port = 8080
+    val channelFuture = boot.connect(host, port)
 
-    val ch  = boot.connect(host, port).sync().channel()
-
-    // Send the HTTP request N times.
-    callN(ch, requestGenerator.buildRequest(host))(5)
-
-    ch.closeFuture().sync()
-    println("client exit")
-  } finally {
-    workerGroup.shutdownGracefully()
-  }
-
-  @tailrec
-  def callN(channel: Channel, request: => FullHttpRequest)(count: Int): Unit = {
-    if (count >= 0) {
-      channel.writeAndFlush(request).sync()
-      callN(channel, request)(count - 1)
-    } else channel.close().sync()
+    channelFuture.addListener((f: ChannelFuture) => {
+      f.channel().writeAndFlush(requestGenerator.buildRequest())
+    })
   }
 }
 
@@ -82,12 +84,6 @@ class HttpClientHandler(requestGenerator: RequestGenerator) extends SimpleChanne
           val isTheSame = value.toString() == requestGenerator.nextSequence.toString
           s"Get the same request sequence: $isTheSame. Seq expected: ${requestGenerator.nextSequence}. Seq received: $value"
         })
-//      if (!response.headers.isEmpty) {
-//        for {
-//          name <- response.headers.names.asScala
-//          value <- response.headers.getAll(name).asScala
-//        } println("HEADER: " + name + " = " + value)
-//      }
       if (HttpHeaders.isTransferEncodingChunked(response)) println("CHUNKED CONTENT {")
       else println("CONTENT {")
     }
@@ -96,7 +92,10 @@ class HttpClientHandler(requestGenerator: RequestGenerator) extends SimpleChanne
       println(content.content.toString(CharsetUtil.UTF_8))
       if (content.isInstanceOf[LastHttpContent]) {
         println("} END OF CONTENT")
-//        ctx.close
+
+        requestGenerator.performRequest(ctx.channel())
+
+        ctx.channel().flush()
       }
     }
   }
@@ -107,13 +106,22 @@ class HttpClientHandler(requestGenerator: RequestGenerator) extends SimpleChanne
   }
 }
 
-class RequestGenerator() {
+class RequestGenerator(host: String, maxAttempt: Int = 2) {
 
-  val HeaderKamonTest = "kamon-test-sequence"
-  private def computeNextSequence = scala.util.Random.nextInt(10000)
-  val nextSequence: Int = computeNextSequence
+  var attempt = maxAttempt
 
-  def buildRequest(host: String, keepAlive: Boolean = true): FullHttpRequest = {
+  val HeaderKamonTest = "X-B3-ParentSpanId"
+  var nextSequence: Int = 0
+  private def computeNextSequence = nextSequence = scala.util.Random.nextInt(10000)
+
+  def performRequest(channel: Channel): Unit = {
+    if (attempt > 0) {
+      channel.write(this.buildRequest())
+      attempt -= 1
+    } else channel.close()
+  }
+
+  def buildRequest(keepAlive: Boolean = true): FullHttpRequest = {
     computeNextSequence
     val keepAliveValue = if (keepAlive) HttpHeaders.Values.KEEP_ALIVE else HttpHeaders.Values.CLOSE
     val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/")
