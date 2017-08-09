@@ -1,19 +1,41 @@
+/*
+ * =========================================================================================
+ * Copyright © 2013-2017 the kamon project <http://kamon.io/>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions
+ * and limitations under the License.
+ * =========================================================================================
+ */
+
 package kamon.netty.instrumentation
 
-import org.aspectj.lang.JoinPoint
 import org.aspectj.lang.annotation._
 
 @Aspect
 class ServerBootstrapInstrumentation {
 
-  @After("execution(* io.netty.bootstrap.ServerBootstrap.group(..)) && args(bossGroup, workerGroup)")
-  def onNewServerBootstrap(jp:JoinPoint,bossGroup:NamedEventLoopGroup, workerGroup:NamedEventLoopGroup):Unit ={
+  import ServerBootstrapInstrumentation._
+
+  @Before("execution(* io.netty.bootstrap.ServerBootstrap.group(..)) && args(bossGroup, workerGroup)")
+  def onNewServerBootstrap(bossGroup:NamedEventLoopGroup, workerGroup:NamedEventLoopGroup):Unit = {
     if(bossGroup == workerGroup) {
-      bossGroup.name = "boss-group"
-      workerGroup.name = "boss-group"
+      bossGroup.name = BossGroupName
+      workerGroup.name = BossGroupName
     } else {
-      bossGroup.name = "boss-group"
-      workerGroup.name = "worker-group"
+      bossGroup.name = BossGroupName
+      workerGroup.name = WorkerGroupName
     }
   }
+}
+
+object ServerBootstrapInstrumentation {
+  val BossGroupName = "boss-group"
+  val WorkerGroupName = "worker-group"
 }
