@@ -24,6 +24,8 @@ val nettyNative       ="io.netty"     % "netty-transport-native-epoll"  % "4.0.5
 
 val logback           = "ch.qos.logback"            %   "logback-classic"       % "1.0.13"
 
+val hc                = "org.apache.httpcomponents" % "httpclient" % "4.5.3"
+
 
 lazy val root = (project in file("."))
   .settings(name := "kamon-netty")
@@ -36,4 +38,4 @@ lazy val root = (project in file("."))
     libraryDependencies ++=
       compileScope(kamonCore, kamonExecutors, scalaExtension, netty, logback, nettyNative) ++
 //      providedScope(netty, nettyNative) ++
-      testScope(scalatest, logbackClassic))
+      testScope(scalatest, logbackClassic, hc))

@@ -20,7 +20,7 @@ class HttpHelloWorldServerHandler extends ChannelInboundHandlerAdapter {
           ctx.write(new DefaultFullHttpResponse(HTTP_1_1, CONTINUE))
         }
         val keepAlive = isKeepAlive(req)
-        val response = new DefaultFullHttpResponse(HTTP_1_1, OK, CONTENT) <| { r =>
+        val response = new DefaultFullHttpResponse(HTTP_1_1, OK, CONTENT.duplicate()) <| { r =>
           r.headers().set(CONTENT_TYPE, "text/plain")
           r.headers().set(CONTENT_LENGTH, r.content().readableBytes())
           if (keepAlive) r.headers().set(CONNECTION, Values.KEEP_ALIVE)
