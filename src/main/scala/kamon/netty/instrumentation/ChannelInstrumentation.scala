@@ -73,7 +73,7 @@ class ChannelInstrumentation {
       }
     }
 
-  @After("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, msg, *)")
+  @Before("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, msg, *)")
   def onEncodeResponse(ctx: ChannelHandlerContext,  msg:HttpResponse): Unit = {
     val hasSpan = ctx.channel().asInstanceOf[TimeAware]
     hasSpan.span.finish()

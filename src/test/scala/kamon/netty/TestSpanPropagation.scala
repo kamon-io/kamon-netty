@@ -76,14 +76,14 @@ class HttpClientHandler(requestGenerator: RequestGenerator) extends SimpleChanne
           println(s"Doesn't get a value for header ${ExtendedB3.Headers.ParentSpanIdentifier}.")
           None
         })
-        .map(name => {
+        .flatMap(name => {
           val values = response.headers.getAll(name).asScala
           if (values.size > 1) println(s"Get more than 1 value for header ${ExtendedB3.Headers.ParentSpanIdentifier}. Values: ${values mkString ","}")
-          values
+          values.headOption
         })
         .foreach(value => {
-          val isTheSame = value.toString() == requestGenerator.nextSequence.toString
-          s"Get the same request sequence: $isTheSame. Seq expected: ${requestGenerator.nextSequence}. Seq received: $value"
+          val isTheSame = value == requestGenerator.nextSequence.toString
+          println(s"Get the same request sequence: $isTheSame. Seq expected: ${requestGenerator.nextSequence}. Seq received: $value")
         })
 //      if (HttpHeaders.isTransferEncodingChunked(response)) println("CHUNKED CONTENT {")
 //      else println("CONTENT {")
@@ -135,7 +135,7 @@ class RequestGenerator(host: String, maxAttempt: Int = 2) {
   private def insertSpan(headers: HttpHeaders, nextSequence: Int): Unit = {
     import ExtendedB3.Headers._
     headers.set(TraceIdentifier, "111")
-    headers.set(SpanIdentifier, "222")
-    headers.set(ParentSpanIdentifier, nextSequence)
+    headers.set(SpanIdentifier, nextSequence)
+//    headers.set(ParentSpanIdentifier, nextSequence)
   }
 }
