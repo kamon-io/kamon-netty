@@ -16,6 +16,7 @@
 
 package kamon.netty.instrumentation
 
+import io.netty.util.concurrent.EventExecutor
 import org.aspectj.lang.annotation._
 
 @Aspect
@@ -38,4 +39,23 @@ class ServerBootstrapInstrumentation {
 object ServerBootstrapInstrumentation {
   val BossGroupName = "boss-group"
   val WorkerGroupName = "worker-group"
+}
+
+
+@Aspect
+class EventLoopMixin {
+
+  @DeclareMixin("io.netty.channel.EventLoopGroup+")
+  def mixinEventLoopGroupWithNamedEventLoopGroup: NamedEventLoopGroup = new NamedEventLoopGroup {}
+}
+
+object EventLoopUtils {
+  def name(eventLoop: EventExecutor): String = {
+    val sanitize:String => String = str => str.replaceAll("(.)(\\p{Upper})", "$1-$2").toLowerCase()
+    s"${eventLoop.parent().asInstanceOf[NamedEventLoopGroup].name}-${sanitize(eventLoop.getClass.getSimpleName)}"
+  }
+}
+
+trait NamedEventLoopGroup {
+  var name:String = _
 }

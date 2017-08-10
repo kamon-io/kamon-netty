@@ -21,7 +21,6 @@ import java.util
 import io.netty.channel.EventLoop
 import io.netty.util.concurrent.EventExecutor
 import kamon.netty.Metrics
-import kamon.netty.util.MonitoredQueue
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation._
 
