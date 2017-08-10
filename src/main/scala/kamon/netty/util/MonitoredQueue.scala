@@ -14,7 +14,7 @@
  * =========================================================================================
  */
 
-package kamon.netty.instrumentation
+package kamon.netty.util
 
 import java.util
 
@@ -22,7 +22,6 @@ import io.netty.channel.EventLoop
 import kamon.netty.Metrics
 import kamon.netty.Metrics.EventLoopMetrics
 import kamon.netty.util.EventLoopUtils.name
-import kamon.netty.util.{Latency, QueueWrapperAdapter}
 
 class MonitoredQueue(eventLoop:EventLoop, underlying:util.Queue[Runnable]) extends QueueWrapperAdapter[Runnable](underlying) {
 

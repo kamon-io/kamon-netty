@@ -23,6 +23,7 @@ import io.netty.channel.{ChannelFuture, ChannelFutureListener}
 import kamon.metric.Gauge
 import kamon.netty.Metrics
 import kamon.netty.util.EventLoopUtils._
+import kamon.netty.util.MonitoredQueue
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation._
 
