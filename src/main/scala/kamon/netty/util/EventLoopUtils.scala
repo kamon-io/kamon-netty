@@ -14,22 +14,10 @@
  * =========================================================================================
  */
 
-package kamon.netty.instrumentation
+package kamon.netty.util
 
 import io.netty.util.concurrent.EventExecutor
-import org.aspectj.lang.annotation._
-
-
-trait NamedEventLoopGroup {
-  var name:String = _
-}
-
-@Aspect
-class EventLoopMixin {
-
-  @DeclareMixin("io.netty.channel.EventLoopGroup+")
-  def mixinEventLoopGroupWithNamedEventLoopGroup: NamedEventLoopGroup = new NamedEventLoopGroup {}
-}
+import kamon.netty.instrumentation.NamedEventLoopGroup
 
 object EventLoopUtils {
   def name(eventLoop: EventExecutor): String = {

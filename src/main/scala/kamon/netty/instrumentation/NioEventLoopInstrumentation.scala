@@ -16,42 +16,19 @@
 
 package kamon.netty.instrumentation
 
+import java.util
+
 import io.netty.channel.nio.NioEventLoop
 import io.netty.channel.{ChannelFuture, ChannelFutureListener}
 import kamon.metric.Gauge
 import kamon.netty.Metrics
-import kamon.netty.util.Latency
+import kamon.netty.util.EventLoopUtils._
+import kamon.netty.util.MonitoredQueue
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation._
 
 @Aspect
 class NioEventLoopInstrumentation {
-  import EventLoopUtils._
-
-
-  @Around("execution(* io.netty.util.concurrent.SingleThreadEventExecutor+.runAllTasks(..)) && this(eventLoop)")
-  def onRunAllTasks(pjp:ProceedingJoinPoint, eventLoop: NioEventLoop): Any = {
-    val processingTime = Metrics.forEventLoop(name(eventLoop)).taskProcessingTime
-//    println("processAll")
-    Latency.measure(processingTime)(pjp.proceed())
-  }
-
-  @Before("execution(* io.netty.util.concurrent.SingleThreadEventExecutor+.addTask(..)) && this(eventLoop)")
-  def onAddTask(eventLoop: NioEventLoop): Unit = {
-    val n = name(eventLoop)
-    println("addTask: " + n)
-    Metrics.forEventLoop(name(eventLoop)).pendingTasks.increment()
-  }
-
-  @Around("execution(* io.netty.channel.nio.NioEventLoop.pollTask(..)) && this(eventLoop)")
-  def onPollTask(pjp: ProceedingJoinPoint, eventLoop: NioEventLoop): Any = {
-    val polledTask = pjp.proceed()
-    if (polledTask != null) {
-      println("polledTask: " + name(eventLoop))
-      Metrics.forEventLoop(name(eventLoop)).pendingTasks.decrement()
-    }
-    polledTask
-  }
 
   @Around("execution(* io.netty.channel.SingleThreadEventLoop.register(..)) && this(eventLoop)")
   def onRegister(pjp: ProceedingJoinPoint, eventLoop: NioEventLoop): Any = {
@@ -77,4 +54,11 @@ class NioEventLoopInstrumentation {
     }
   }
 
+  @Around("execution(* io.netty.channel.nio.NioEventLoop.newTaskQueue(..)) && this(eventLoop)")
+  def onNewTaskQueue(pjp: ProceedingJoinPoint, eventLoop: NioEventLoop): Any = {
+    val queue = pjp.proceed().asInstanceOf[util.Queue[Runnable]]
+    MonitoredQueue(eventLoop, queue)
+  }
 }
+
+

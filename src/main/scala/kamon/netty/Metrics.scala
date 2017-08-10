@@ -27,18 +27,12 @@ object Metrics {
     * Metrics for Netty Event Loops:
     *
     *    - registered-channels:The number of registered Channels.
-    *    - last-io-processing-time: The number of milliseconds the last processing of all IO took..
-    *    - last-task-processing-time: The the number of milliseconds the last processing of all tasks took..
-    *    - last-processed-channels: The number of Channel's that where processed in the last run..
-    *    - last-processed-channels: The number of milliseconds the  EventLoop blocked before run to pick up IO and tasks.
+    *    - task-processing-time: The the number of nanoseconds the last processing of all tasks took..
     *    - pending-tasks: The number of tasks that are pending for processing.
     */
   val registeredChannelsMetric = Kamon.gauge("netty.event-loop.registered-channels")
-  val lastIoProcessingTimeMetric = Kamon.histogram("netty.event-loop.last-io-processing-time", time.nanoseconds)
-  val lastTaskProcessingTimeMetric = Kamon.histogram("netty.event-loop.last-task-processing-time", time.nanoseconds)
-  val lastProcessedChannelsMetric = Kamon.gauge("netty.event-loop.last-processed-channels")
-  val lastBlockingAmountMetric = Kamon.histogram("netty.event-loop.last-blocking-amount", time.nanoseconds)
-  val pendingTasksMetric = Kamon.minMaxCounter("netty.event-loop.pending-tasks")
+  val taskProcessingTimeMetric = Kamon.histogram("netty.event-loop.task-processing-time", time.nanoseconds)
+  val taskQueueSizeMetric = Kamon.minMaxCounter("netty.event-loop.task-queue-size")
 
 
   def forEventLoop(name: String): EventLoopMetrics = {
@@ -46,29 +40,20 @@ object Metrics {
     EventLoopMetrics(
       eventLoopTags,
       registeredChannelsMetric.refine(eventLoopTags),
-      lastIoProcessingTimeMetric.refine(eventLoopTags),
-      lastTaskProcessingTimeMetric.refine(eventLoopTags),
-      lastProcessedChannelsMetric.refine(eventLoopTags),
-      lastBlockingAmountMetric.refine(eventLoopTags),
-      pendingTasksMetric.refine(eventLoopTags)
+      taskProcessingTimeMetric.refine(eventLoopTags),
+      taskQueueSizeMetric.refine(eventLoopTags)
     )
   }
 
   case class EventLoopMetrics(tags: Map[String, String],
                               registeredChannels: Gauge,
-                              ioProcessingTime: Histogram,
                               taskProcessingTime: Histogram,
-                              channelProcessed: Gauge,
-                              blockingAmount: Histogram,
-                              pendingTasks: MinMaxCounter) {
+                              taskQueueSize: MinMaxCounter) {
 
     def cleanup(): Unit = {
       registeredChannelsMetric.remove(tags)
-      lastIoProcessingTimeMetric.remove(tags)
-      lastTaskProcessingTimeMetric.remove(tags)
-      lastProcessedChannelsMetric.remove(tags)
-      lastBlockingAmountMetric.remove(tags)
-      pendingTasksMetric.remove(tags)
+      taskProcessingTimeMetric.remove(tags)
+      taskQueueSizeMetric.remove(tags)
     }
   }
 }

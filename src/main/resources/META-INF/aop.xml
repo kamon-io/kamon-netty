@@ -6,8 +6,6 @@
         <aspect name="kamon.netty.instrumentation.ServerBootstrapInstrumentation"/>
         <aspect name="kamon.netty.instrumentation.NioEventLoopInstrumentation"/>
         <aspect name="kamon.netty.instrumentation.EpollEventLoopInstrumentation"/>
-        <aspect name="kamon.netty.instrumentation.ServerBootstrapInstrumentation"/>
-        <aspect name="kamon.netty.instrumentation.ChannelInstrumentation"/>
     </aspects>
     <weaver options="-verbose">
         <include within="kamon.netty..*"/>
