@@ -49,13 +49,6 @@ class EventLoopMixin {
   def mixinEventLoopGroupWithNamedEventLoopGroup: NamedEventLoopGroup = new NamedEventLoopGroup {}
 }
 
-object EventLoopUtils {
-  def name(eventLoop: EventExecutor): String = {
-    val sanitize:String => String = str => str.replaceAll("(.)(\\p{Upper})", "$1-$2").toLowerCase()
-    s"${eventLoop.parent().asInstanceOf[NamedEventLoopGroup].name}-${sanitize(eventLoop.getClass.getSimpleName)}"
-  }
-}
-
 trait NamedEventLoopGroup {
   var name:String = _
 }

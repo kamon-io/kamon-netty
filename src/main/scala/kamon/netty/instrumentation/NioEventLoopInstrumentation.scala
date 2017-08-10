@@ -22,7 +22,7 @@ import io.netty.channel.nio.NioEventLoop
 import io.netty.channel.{ChannelFuture, ChannelFutureListener}
 import kamon.metric.Gauge
 import kamon.netty.Metrics
-import kamon.netty.instrumentation.EventLoopUtils._
+import kamon.netty.util.EventLoopUtils._
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation._
 

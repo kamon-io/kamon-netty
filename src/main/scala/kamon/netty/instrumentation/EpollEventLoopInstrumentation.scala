@@ -26,7 +26,7 @@ import org.aspectj.lang.annotation._
 
 @Aspect
 class EpollEventLoopInstrumentation {
-  import EventLoopUtils._
+  import kamon.netty.util.EventLoopUtils._
 
   @After("execution(* io.netty.channel.epoll.EpollEventLoop.add(..)) && this(eventLoop)")
   def onAdd(eventLoop: EventExecutor): Unit =
