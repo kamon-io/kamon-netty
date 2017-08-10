@@ -45,12 +45,12 @@ class ChannelInstrumentation {
 
 
 
-  def readOnlyTextMapFromHttpRequest(headers: HttpHeaders): TextMap = new TextMap {
+  def readOnlyTextMapFromHttpRequest(request: HttpRequest): TextMap = new TextMap {
     import scala.collection.JavaConverters._
 
-    override def values: Iterator[(String, String)] = headers.iterator().asScala.map(x => (x.getKey,x.getValue))
-    override def get(key: String): Option[String] = Option(headers.get(key))
-    override def put(key: String, value: String): Unit = headers.set(key, value)
+    override def values: Iterator[(String, String)] = request.headers().iterator().asScala.map(x => (x.getKey,x.getValue))
+    override def get(key: String): Option[String] = Option(request.headers().get(key))
+    override def put(key: String, value: String): Unit = request.headers().set(key, value)
   }
 
 //  @After("execution(* io.netty.handler.codec.http.HttpObjectDecoder.decode(..)) && args(ctx, *, out)")
@@ -58,7 +58,7 @@ class ChannelInstrumentation {
     def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[Object]): Unit = {
       if(out.size() > 0 && out.get(0).isInstanceOf[HttpRequest]) {
         val httpRequest = out.get(0).asInstanceOf[HttpRequest]
-        val incomingSpanContext = Kamon.extract(Format.HttpHeaders, readOnlyTextMapFromHttpRequest(httpRequest.headers()))
+        val incomingSpanContext = Kamon.extract(Format.HttpHeaders, readOnlyTextMapFromHttpRequest(httpRequest))
 
 //        httpRequest.headers().get("X-B3-ParentSpanId")
         val span = Kamon.buildSpan(httpRequest.getUri)
@@ -73,11 +73,10 @@ class ChannelInstrumentation {
       }
     }
 
-  @Before("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, msg, *)")
+  @After("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, msg, *)")
   def onEncodeResponse(ctx: ChannelHandlerContext,  msg:HttpResponse): Unit = {
     val hasSpan = ctx.channel().asInstanceOf[TimeAware]
     hasSpan.span.finish()
-    Kamon.inject(hasSpan.span.context(), Format.HttpHeaders, readOnlyTextMapFromHttpRequest(msg.headers()))
     println("ON Encode SpanID =>"  + hasSpan.span.context().spanID + " TraceId => "+ hasSpan.span.context().traceID + "name: =>" + hasSpan.span.context().baggage.get("request-uri"))
   }
 
