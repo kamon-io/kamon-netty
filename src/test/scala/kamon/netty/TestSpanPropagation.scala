@@ -10,6 +10,7 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.{HttpContent, LastHttpContent, _}
 import io.netty.util.CharsetUtil
 import io.netty.util.concurrent.GenericFutureListener
+import kamon.trace.SpanContextCodec.ExtendedB3
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -70,28 +71,28 @@ class HttpClientHandler(requestGenerator: RequestGenerator) extends SimpleChanne
       println(s"Response: $response")
 
       response.headers.names.asScala
-        .find(_ == requestGenerator.HeaderKamonTest)
+        .find(_ == ExtendedB3.Headers.ParentSpanIdentifier)
         .orElse({
-          println(s"Doesn't get a value for header ${requestGenerator.HeaderKamonTest}.")
+          println(s"Doesn't get a value for header ${ExtendedB3.Headers.ParentSpanIdentifier}.")
           None
         })
         .map(name => {
           val values = response.headers.getAll(name).asScala
-          if (values.size > 1) println(s"Get more than 1 value for header ${requestGenerator.HeaderKamonTest}. Values: ${values mkString ","}")
+          if (values.size > 1) println(s"Get more than 1 value for header ${ExtendedB3.Headers.ParentSpanIdentifier}. Values: ${values mkString ","}")
           values
         })
         .foreach(value => {
           val isTheSame = value.toString() == requestGenerator.nextSequence.toString
           s"Get the same request sequence: $isTheSame. Seq expected: ${requestGenerator.nextSequence}. Seq received: $value"
         })
-      if (HttpHeaders.isTransferEncodingChunked(response)) println("CHUNKED CONTENT {")
-      else println("CONTENT {")
+//      if (HttpHeaders.isTransferEncodingChunked(response)) println("CHUNKED CONTENT {")
+//      else println("CONTENT {")
     }
     if (msg.isInstanceOf[HttpContent]) {
       val content = msg.asInstanceOf[HttpContent]
-      println(content.content.toString(CharsetUtil.UTF_8))
+//      println(content.content.toString(CharsetUtil.UTF_8))
       if (content.isInstanceOf[LastHttpContent]) {
-        println("} END OF CONTENT")
+//        println("} END OF CONTENT")
 
         requestGenerator.performRequest(ctx.channel())
 
@@ -110,7 +111,6 @@ class RequestGenerator(host: String, maxAttempt: Int = 2) {
 
   var attempt = maxAttempt
 
-  val HeaderKamonTest = "X-B3-ParentSpanId"
   var nextSequence: Int = 0
   private def computeNextSequence = nextSequence = scala.util.Random.nextInt(10000)
 
@@ -125,10 +125,17 @@ class RequestGenerator(host: String, maxAttempt: Int = 2) {
     computeNextSequence
     val keepAliveValue = if (keepAlive) HttpHeaders.Values.KEEP_ALIVE else HttpHeaders.Values.CLOSE
     val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/")
-    request.headers().set(HeaderKamonTest, nextSequence)
     request.headers().set(HttpHeaders.Names.HOST, host)
     request.headers().set(HttpHeaders.Names.CONNECTION, keepAliveValue)
     request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP)
+    insertSpan(request.headers(), nextSequence)
     request
+  }
+
+  private def insertSpan(headers: HttpHeaders, nextSequence: Int): Unit = {
+    import ExtendedB3.Headers._
+    headers.set(TraceIdentifier, "111")
+    headers.set(SpanIdentifier, "222")
+    headers.set(ParentSpanIdentifier, nextSequence)
   }
 }

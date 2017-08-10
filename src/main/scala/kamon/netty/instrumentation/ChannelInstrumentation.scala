@@ -17,7 +17,7 @@
 package kamon.netty.instrumentation
 
 import io.netty.channel.{ChannelHandlerContext, ChannelPromise}
-import io.netty.handler.codec.http.{HttpRequest, HttpResponse, LastHttpContent}
+import io.netty.handler.codec.http.{HttpHeaders, HttpRequest, HttpResponse, LastHttpContent}
 import kamon.Kamon
 import kamon.trace.SpanContextCodec.Format
 import kamon.trace.{Span, TextMap}
@@ -41,22 +41,16 @@ class ChannelInstrumentation {
   @Before("execution(* io.netty.channel.ChannelHandlerContext+.fireChannelRead(..)) && this(ctx) && args(request)")
   def onFireChannelRead(ctx:TimeAware ,request: HttpRequest): Unit = {
       ctx._startTime = Clock.microTimestamp()
-//    val incomingSpanContext = Kamon.extract(Format.HttpHeaders, readOnlyTextMapFromHttpRequest(request))
-//    Kamon.buildSpan("unknown-operation")
-//      .asChildOf(incomingSpanContext)
-//      .withSpanTag("span.king", "server")
-//      .start()
-////      .start()
   }
 
 
 
-  def readOnlyTextMapFromHttpRequest(request: HttpRequest): TextMap = new TextMap {
+  def readOnlyTextMapFromHttpRequest(headers: HttpHeaders): TextMap = new TextMap {
     import scala.collection.JavaConverters._
 
-    override def values: Iterator[(String, String)] = request.headers.iterator().asScala.map(x => (x.getKey,x.getValue))
-    override def get(key: String): Option[String] = None
-    override def put(key: String, value: String): Unit = {}
+    override def values: Iterator[(String, String)] = headers.iterator().asScala.map(x => (x.getKey,x.getValue))
+    override def get(key: String): Option[String] = Option(headers.get(key))
+    override def put(key: String, value: String): Unit = headers.set(key, value)
   }
 
 //  @After("execution(* io.netty.handler.codec.http.HttpObjectDecoder.decode(..)) && args(ctx, *, out)")
@@ -64,12 +58,14 @@ class ChannelInstrumentation {
     def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[Object]): Unit = {
       if(out.size() > 0 && out.get(0).isInstanceOf[HttpRequest]) {
         val httpRequest = out.get(0).asInstanceOf[HttpRequest]
-        val incomingSpanContext = Kamon.extract(Format.HttpHeaders, readOnlyTextMapFromHttpRequest(httpRequest))
-          val span = Kamon.buildSpan(httpRequest.getUri)
-            .asChildOf(incomingSpanContext)
-            .withSpanTag("span.kind", "server")
-            .withStartTimestamp(ctx.channel().asInstanceOf[TimeAware]._startTime)
-            .start()
+        val incomingSpanContext = Kamon.extract(Format.HttpHeaders, readOnlyTextMapFromHttpRequest(httpRequest.headers()))
+
+//        httpRequest.headers().get("X-B3-ParentSpanId")
+        val span = Kamon.buildSpan(httpRequest.getUri)
+          .asChildOf(incomingSpanContext)
+          .withSpanTag("span.kind", "server")
+          .withStartTimestamp(ctx.channel().asInstanceOf[TimeAware]._startTime)
+          .start()
 
         span.context().baggage.add("request-uri", httpRequest.getUri)
         ctx.channel().asInstanceOf[TimeAware].span = span
@@ -79,9 +75,10 @@ class ChannelInstrumentation {
 
   @After("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, msg, *)")
   def onEncodeResponse(ctx: ChannelHandlerContext,  msg:HttpResponse): Unit = {
-      val hasSpan = ctx.channel().asInstanceOf[TimeAware]
-      hasSpan.span.finish()
-      println("ON Encode SpanID =>"  + hasSpan.span.context().spanID + " TraceId => "+ hasSpan.span.context().traceID + "name: =>" + hasSpan.span.context().baggage.get("request-uri"))
+    val hasSpan = ctx.channel().asInstanceOf[TimeAware]
+    hasSpan.span.finish()
+    Kamon.inject(hasSpan.span.context(), Format.HttpHeaders, readOnlyTextMapFromHttpRequest(msg.headers()))
+    println("ON Encode SpanID =>"  + hasSpan.span.context().spanID + " TraceId => "+ hasSpan.span.context().traceID + "name: =>" + hasSpan.span.context().baggage.get("request-uri"))
   }
 
 //  val incomingSpanContext = Kamon.extract(HTTP_HEADERS, readOnlyTextMapFromHttpRequest(request))
