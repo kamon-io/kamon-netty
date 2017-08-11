@@ -28,6 +28,7 @@ import io.netty.handler.logging.{LogLevel, LoggingHandler}
 import io.netty.handler.stream.ChunkedWriteHandler
 import kamon.Kamon
 import kamon.netty.instrumentation.ChannelSpanAware
+import kamon.netty.util.HttpUtils
 import kamon.trace.{SpanContextCodec, TextMap}
 
 class NioEventLoopBasedServer(port: Int) {
@@ -102,7 +103,7 @@ private class HttpServerHandler extends ChannelInboundHandlerAdapter {
       response.headers.set("Content-Type", "text/plain")
       response.headers.set("Content-Length", response.content.readableBytes)
       // Introduce current span in order to validate it on the tests
-      Kamon.inject(ctx.channel().asInstanceOf[ChannelSpanAware].span.context(), SpanContextCodec.Format.HttpHeaders, textMapForHttpResponse(response))
+      Kamon.inject(ctx.channel().asInstanceOf[ChannelSpanAware].span.context(), SpanContextCodec.Format.HttpHeaders, HttpUtils.textMapForHttpResponse(response))
       ctx.write(response).addListener(ChannelFutureListener.CLOSE)
     }
   }
@@ -112,12 +113,4 @@ private class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit =
     ctx.close()
-
-  private def textMapForHttpResponse(response: HttpResponse): TextMap = new TextMap {
-    import scala.collection.JavaConverters._
-
-    override def values: Iterator[(String, String)] = response.headers().iterator().asScala.map(x => (x.getKey,x.getValue))
-    override def get(key: String): Option[String] = Option(response.headers().get(key))
-    override def put(key: String, value: String): Unit = response.headers().set(key, value)
-  }
 }

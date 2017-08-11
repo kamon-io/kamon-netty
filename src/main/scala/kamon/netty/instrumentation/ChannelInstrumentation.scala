@@ -19,6 +19,7 @@ package kamon.netty.instrumentation
 import io.netty.channel.{ChannelHandlerContext, ChannelPromise}
 import io.netty.handler.codec.http.{HttpHeaders, HttpRequest, HttpResponse, LastHttpContent}
 import kamon.Kamon
+import kamon.netty.util.HttpUtils
 import kamon.trace.SpanContextCodec.Format
 import kamon.trace.{Span, TextMap}
 import kamon.util.{Clock, HasSpan}
@@ -43,22 +44,12 @@ class ChannelInstrumentation {
       ctx._startTime = Clock.microTimestamp()
   }
 
-
-
-  def readOnlyTextMapFromHttpRequest(request: HttpRequest): TextMap = new TextMap {
-    import scala.collection.JavaConverters._
-
-    override def values: Iterator[(String, String)] = request.headers().iterator().asScala.map(x => (x.getKey,x.getValue))
-    override def get(key: String): Option[String] = Option(request.headers().get(key))
-    override def put(key: String, value: String): Unit = request.headers().set(key, value)
-  }
-
 //  @After("execution(* io.netty.handler.codec.http.HttpObjectDecoder.decode(..)) && args(ctx, *, out)")
   @After("execution(* io.netty.handler.codec.http.HttpServerCodec.HttpServerRequestDecoder.decode(..)) && args(ctx, *, out)")
     def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[Object]): Unit = {
       if(out.size() > 0 && out.get(0).isInstanceOf[HttpRequest]) {
         val httpRequest = out.get(0).asInstanceOf[HttpRequest]
-        val incomingSpanContext = Kamon.extract(Format.HttpHeaders, readOnlyTextMapFromHttpRequest(httpRequest))
+        val incomingSpanContext = Kamon.extract(Format.HttpHeaders, HttpUtils.textMapForHttpRequest(httpRequest))
 
 //        httpRequest.headers().get("X-B3-ParentSpanId")
         val span = Kamon.buildSpan(httpRequest.getUri)
@@ -77,7 +68,7 @@ class ChannelInstrumentation {
   def onEncodeResponse(ctx: ChannelHandlerContext,  msg:HttpResponse): Unit = {
     val hasSpan = ctx.channel().asInstanceOf[ChannelSpanAware]
     hasSpan.span.finish()
-    println("ON Encode SpanID =>"  + hasSpan.span.context().spanID + " TraceId => "+ hasSpan.span.context().traceID + "name: =>" + hasSpan.span.context().baggage.get("request-uri"))
+//    println("ON Encode SpanID =>"  + hasSpan.span.context().spanID + " TraceId => "+ hasSpan.span.context().traceID + "name: =>" + hasSpan.span.context().baggage.get("request-uri"))
   }
 
 //  val incomingSpanContext = Kamon.extract(HTTP_HEADERS, readOnlyTextMapFromHttpRequest(request))
