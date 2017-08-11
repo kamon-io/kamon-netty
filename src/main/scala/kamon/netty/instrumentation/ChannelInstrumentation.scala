@@ -16,19 +16,18 @@
 
 package kamon.netty.instrumentation
 
-import io.netty.channel.{ChannelHandlerContext, ChannelPromise}
-import io.netty.handler.codec.http.{HttpHeaders, HttpRequest, HttpResponse, LastHttpContent}
+import io.netty.channel.ChannelHandlerContext
+import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
 import kamon.Kamon
 import kamon.netty.util.HttpUtils
+import kamon.trace.Span
 import kamon.trace.SpanContextCodec.Format
-import kamon.trace.{Span, TextMap}
-import kamon.util.{Clock, HasSpan}
-import org.aspectj.lang.ProceedingJoinPoint
+import kamon.util.Clock
 import org.aspectj.lang.annotation._
 
 
 trait ChannelSpanAware {
-  @volatile var _startTime:Long = 0
+  @volatile var _startTime: Long = 0
   @volatile var  span: Span = _
 }
 
@@ -51,7 +50,6 @@ class ChannelInstrumentation {
         val httpRequest = out.get(0).asInstanceOf[HttpRequest]
         val incomingSpanContext = Kamon.extract(Format.HttpHeaders, HttpUtils.textMapForHttpRequest(httpRequest))
 
-//        httpRequest.headers().get("X-B3-ParentSpanId")
         val span = Kamon.buildSpan(httpRequest.getUri)
           .asChildOf(incomingSpanContext)
           .withSpanTag("span.kind", "server")
@@ -60,7 +58,7 @@ class ChannelInstrumentation {
 
         span.context().baggage.add("request-uri", httpRequest.getUri)
         ctx.channel().asInstanceOf[ChannelSpanAware].span = span
-        println("ON Decode SpanID =>"  + span.context().spanID + " TraceId => "+ span.context().traceID)
+//        println("ON Decode SpanID =>"  + span.context().spanID + " TraceId => "+ span.context().traceID)
       }
     }
 
