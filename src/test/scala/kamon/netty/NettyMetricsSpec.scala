@@ -16,7 +16,7 @@
 
 package kamon.netty
 
-import kamon.netty.Metrics.{registeredChannelsMetric, taskProcessingTimeMetric, taskQueueSizeMetric}
+import kamon.netty.Metrics.{registeredChannelsMetric, taskProcessingTimeMetric, taskQueueSizeMetric, taskWaitingTimeMetric}
 import kamon.testkit.BaseSpec
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.impl.client.HttpClients
@@ -35,6 +35,7 @@ class NettyMetricsSpec extends WordSpec with Matchers with BaseSpec  {
         registeredChannelsMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-nio-event-loop", "worker-group-nio-event-loop")
         taskProcessingTimeMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-nio-event-loop", "worker-group-nio-event-loop")
         taskQueueSizeMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-nio-event-loop", "worker-group-nio-event-loop")
+        taskWaitingTimeMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-nio-event-loop", "worker-group-nio-event-loop")
       }
     }
 
@@ -47,6 +48,7 @@ class NettyMetricsSpec extends WordSpec with Matchers with BaseSpec  {
         registeredChannelsMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-epoll-event-loop", "worker-group-epoll-event-loop")
         taskProcessingTimeMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-epoll-event-loop", "worker-group-epoll-event-loop")
         taskQueueSizeMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-epoll-event-loop", "worker-group-epoll-event-loop")
+        taskWaitingTimeMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-epoll-event-loop", "worker-group-epoll-event-loop")
       }
     }
 
@@ -68,6 +70,7 @@ class NettyMetricsSpec extends WordSpec with Matchers with BaseSpec  {
         metrics.registeredChannels.value() should be > 0L
         metrics.taskProcessingTime.distribution().max should be > 0L
         metrics.taskQueueSize.distribution().max should be > 0L
+        metrics.taskWaitingTime.distribution().max should be > 0L
       }
     }
 
@@ -89,6 +92,7 @@ class NettyMetricsSpec extends WordSpec with Matchers with BaseSpec  {
         metrics.registeredChannels.value() should be >= 0L
         metrics.taskProcessingTime.distribution().max should be > 0L
         metrics.taskQueueSize.distribution().max should be > 0L
+        metrics.taskWaitingTime.distribution().max should be > 0L
       }
     }
   }
