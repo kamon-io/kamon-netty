@@ -22,8 +22,11 @@ import io.netty.channel.EventLoop
 import kamon.netty.Metrics
 import kamon.netty.Metrics.EventLoopMetrics
 import kamon.netty.util.EventLoopUtils.name
+import kamon.util.Clock
 
 class MonitoredQueue(eventLoop:EventLoop, underlying:util.Queue[Runnable]) extends QueueWrapperAdapter[Runnable](underlying) {
+
+  import MonitoredQueue._
 
   implicit lazy val eventLoopMetrics: EventLoopMetrics = Metrics.forEventLoop(name(eventLoop))
 
@@ -40,6 +43,7 @@ class MonitoredQueue(eventLoop:EventLoop, underlying:util.Queue[Runnable]) exten
   override def remove(): Runnable = {
     val runnable = underlying.remove()
     eventLoopMetrics.taskQueueSize.decrement()
+    eventLoopMetrics.taskWaitingTime.record(timeInQueue(runnable))
     runnable
   }
 
@@ -48,6 +52,7 @@ class MonitoredQueue(eventLoop:EventLoop, underlying:util.Queue[Runnable]) exten
 
     if(runnable != null) {
       eventLoopMetrics.taskQueueSize.decrement()
+      eventLoopMetrics.taskWaitingTime.record(timeInQueue(runnable))
     }
     runnable
   }
@@ -56,9 +61,18 @@ class MonitoredQueue(eventLoop:EventLoop, underlying:util.Queue[Runnable]) exten
 object MonitoredQueue {
   def apply(eventLoop: EventLoop, underlying: util.Queue[Runnable]): MonitoredQueue =
     new MonitoredQueue(eventLoop, underlying)
+
+  def timeInQueue(runnable: Runnable):Long =
+    runnable.asInstanceOf[TimedTask].timeInQueue
+
 }
 
 private[this] class TimedTask(underlying:Runnable)(implicit metrics: EventLoopMetrics) extends Runnable {
+  val startTime:Long =  Clock.relativeNanoTimestamp()
+
   override def run(): Unit =
     Latency.measure(metrics.taskProcessingTime)(underlying.run())
+
+  def timeInQueue: Long =
+    Clock.relativeNanoTimestamp() - startTime
 }
