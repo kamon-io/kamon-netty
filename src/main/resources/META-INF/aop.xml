@@ -2,6 +2,7 @@
 
 <aspectj>
     <aspects>
+        <aspect name="kamon.netty.instrumentation.ChannelInstrumentation"/>
         <aspect name="kamon.netty.instrumentation.EventLoopMixin"/>
         <aspect name="kamon.netty.instrumentation.ServerBootstrapInstrumentation"/>
         <aspect name="kamon.netty.instrumentation.NioEventLoopInstrumentation"/>

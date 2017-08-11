@@ -26,7 +26,7 @@ import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation._
 
 
-trait TimeAware {
+trait ChannelSpanAware {
   @volatile var _startTime:Long = 0
   @volatile var  span: Span = _
 }
@@ -35,11 +35,11 @@ trait TimeAware {
 class ChannelInstrumentation {
 
   @DeclareMixin("io.netty.channel.Channel+")
-  def mixinHasSpanToTimeAware: TimeAware =  new TimeAware{}
+  def mixinHasSpanToTimeAware: ChannelSpanAware =  new ChannelSpanAware{}
 
 
   @Before("execution(* io.netty.channel.ChannelHandlerContext+.fireChannelRead(..)) && this(ctx) && args(request)")
-  def onFireChannelRead(ctx:TimeAware ,request: HttpRequest): Unit = {
+  def onFireChannelRead(ctx:ChannelSpanAware, request: HttpRequest): Unit = {
       ctx._startTime = Clock.microTimestamp()
   }
 
@@ -64,18 +64,18 @@ class ChannelInstrumentation {
         val span = Kamon.buildSpan(httpRequest.getUri)
           .asChildOf(incomingSpanContext)
           .withSpanTag("span.kind", "server")
-          .withStartTimestamp(ctx.channel().asInstanceOf[TimeAware]._startTime)
+          .withStartTimestamp(ctx.channel().asInstanceOf[ChannelSpanAware]._startTime)
           .start()
 
         span.context().baggage.add("request-uri", httpRequest.getUri)
-        ctx.channel().asInstanceOf[TimeAware].span = span
+        ctx.channel().asInstanceOf[ChannelSpanAware].span = span
         println("ON Decode SpanID =>"  + span.context().spanID + " TraceId => "+ span.context().traceID)
       }
     }
 
-  @After("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, msg, *)")
+  @Before("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, msg, *)")
   def onEncodeResponse(ctx: ChannelHandlerContext,  msg:HttpResponse): Unit = {
-    val hasSpan = ctx.channel().asInstanceOf[TimeAware]
+    val hasSpan = ctx.channel().asInstanceOf[ChannelSpanAware]
     hasSpan.span.finish()
     println("ON Encode SpanID =>"  + hasSpan.span.context().spanID + " TraceId => "+ hasSpan.span.context().traceID + "name: =>" + hasSpan.span.context().baggage.get("request-uri"))
   }
