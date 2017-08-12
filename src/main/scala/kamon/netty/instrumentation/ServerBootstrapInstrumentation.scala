@@ -16,7 +16,6 @@
 
 package kamon.netty.instrumentation
 
-import io.netty.util.concurrent.EventExecutor
 import org.aspectj.lang.annotation._
 
 @Aspect

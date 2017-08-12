@@ -29,7 +29,8 @@ import io.netty.handler.stream.ChunkedWriteHandler
 import kamon.Kamon
 import kamon.netty.instrumentation.ChannelSpanAware
 import kamon.netty.util.HttpUtils
-import kamon.trace.{SpanContextCodec, TextMap}
+import kamon.trace.SpanContextCodec
+
 
 class NioEventLoopBasedServer(port: Int) {
   val bossGroup = new NioEventLoopGroup(1)
