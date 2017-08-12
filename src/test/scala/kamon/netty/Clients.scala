@@ -43,12 +43,6 @@ class NioEventLoopBasedClient(port: Int) {
     group.shutdownGracefully()
   }
 
-  def doRequest(path: String): Unit = {
-    val future = channel.write(get(path))
-    channel.flush
-    future.await(2000)
-  }
-
   def execute(request: DefaultFullHttpRequest): FullHttpResponse = {
     val future = channel.write(request)
     channel.flush
