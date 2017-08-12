@@ -24,7 +24,6 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http._
-import io.netty.handler.logging.{LogLevel, LoggingHandler}
 import io.netty.handler.stream.ChunkedWriteHandler
 import kamon.Kamon
 import kamon.netty.instrumentation.ChannelSpanAware
@@ -39,7 +38,6 @@ class NioEventLoopBasedServer(port: Int) {
 
   b.group(bossGroup, workerGroup)
     .channel(classOf[NioServerSocketChannel])
-    .handler(new LoggingHandler(LogLevel.INFO))
     .childHandler(new HttpServerInitializer)
 
   val channel: Channel = b.bind(port).sync.channel
@@ -58,7 +56,6 @@ class EpollEventLoopBasedServer(port: Int) {
 
   b.group(bossGroup, workerGroup)
     .channel(classOf[EpollServerSocketChannel])
-    .handler(new LoggingHandler(LogLevel.INFO))
     .childHandler(new HttpServerInitializer)
 
   val channel: Channel = b.bind(port).sync.channel
