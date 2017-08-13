@@ -17,10 +17,10 @@
 package kamon.netty
 
 import kamon.netty.Metrics.{registeredChannelsMetric, taskProcessingTimeMetric, taskQueueSizeMetric, taskWaitingTimeMetric}
-import kamon.testkit.BaseSpec
+import kamon.testkit.MetricInspection
 import org.scalatest.{Matchers, WordSpec}
 
-class NettyMetricsSpec extends WordSpec with Matchers with BaseSpec  {
+class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
 
   "The NettyMetrics" should {
 

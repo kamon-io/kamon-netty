@@ -14,23 +14,26 @@
  * =========================================================================================
  */
 
-package kamon.netty
+package kamon.testkit
 
-import com.typesafe.config.Config
-import io.netty.handler.codec.http.HttpRequest
+import com.typesafe.config.ConfigFactory
 import kamon.Kamon
 
-object Netty {
-  loadConfiguration(Kamon.config())
+trait Reconfigure {
 
-  Kamon.onReconfigure((newConfig: Config) => Netty.loadConfiguration(newConfig))
-
-  private def loadConfiguration(config: Config): Unit = synchronized {
-    val nettyConfig = config.getConfig("kamon.netty")
+  def enableFastSpanFlushing(): Unit = {
+    applyConfig("kamon.trace.tick-interval = 1 millisecond")
   }
 
-  def generateHttpClientOperationName(request: HttpRequest):String = {
-    request.getUri
+  def sampleAlways(): Unit = {
+    applyConfig("kamon.trace.sampler = always")
   }
 
+  def sampleNever(): Unit = {
+    applyConfig("kamon.trace.sampler = never")
+  }
+
+  private def applyConfig(configString: String): Unit = {
+    Kamon.reconfigure(ConfigFactory.parseString(configString).withFallback(Kamon.config()))
+  }
 }

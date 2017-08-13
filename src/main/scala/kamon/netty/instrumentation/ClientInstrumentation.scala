@@ -25,14 +25,20 @@ import kamon.netty.Netty
 import kamon.trace.SpanContextCodec.Format
 import kamon.trace.TextMap
 import org.aspectj.lang.ProceedingJoinPoint
-import org.aspectj.lang.annotation.{After, AfterThrowing, Around, Aspect}
+import org.aspectj.lang.annotation._
 
 import scala.collection.mutable
 
 @Aspect
 class ClientInstrumentation {
 
-  @Around("execution(* io.netty.handler.codec.http.HttpClientCodec.Encoder.encode(..)) && args(ctx, httpRequest, out)")
+  @Pointcut("execution(* io.netty.handler.codec.http.HttpClientCodec.Decoder.decode(..))")
+  def decoderPointcut():Unit = {}
+
+  @Pointcut("execution(* io.netty.handler.codec.http.HttpClientCodec.Encoder.encode(..))")
+  def encoderPointcut():Unit = {}
+
+  @Around("encoderPointcut() && args(ctx, httpRequest, out)")
   def onEncodeRequest(pjp: ProceedingJoinPoint, ctx: ChannelHandlerContext, httpRequest: HttpRequest, out: util.List[AnyRef]): AnyRef = {
     val activeSpan = Kamon.activeSpan()
 
@@ -53,7 +59,7 @@ class ClientInstrumentation {
     }
   }
 
-  @After("execution(* io.netty.handler.codec.http.HttpClientCodec.Decoder.decode(..)) && args(ctx, *, out)")
+  @After("decoderPointcut() && args(ctx, *, out)")
   def onDecodeRequest(ctx: ChannelHandlerContext, out: java.util.List[Object]): Unit = {
     val  response = out.get(0)
     if(response.isInstanceOf[DefaultHttpResponse]) {
@@ -62,7 +68,7 @@ class ClientInstrumentation {
     }
   }
 
-  @AfterThrowing("execution(* io.netty.handler.codec.http.HttpClientCodec.Decoder.decode(..)) && args(ctx, *, *)")
+  @AfterThrowing("decoderPointcut() && args(ctx, *, *)")
   def onDecodeError(ctx: ChannelHandlerContext): Unit = {
     val span = ctx.channel().asInstanceOf[ChannelSpanAware].span
     span.addSpanTag("error", "true").finish()

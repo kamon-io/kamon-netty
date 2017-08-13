@@ -14,23 +14,26 @@
  * =========================================================================================
  */
 
-package kamon.netty
+package kamon.testkit
+
+import java.util.concurrent.LinkedBlockingQueue
 
 import com.typesafe.config.Config
-import io.netty.handler.codec.http.HttpRequest
-import kamon.Kamon
+import kamon.SpanReporter
+import kamon.trace.Span
+import kamon.trace.Span.FinishedSpan
 
-object Netty {
-  loadConfiguration(Kamon.config())
+class TestSpanReporter extends SpanReporter {
+  import scala.collection.JavaConverters._
+  private val reportedSpans = new LinkedBlockingQueue[FinishedSpan]()
 
-  Kamon.onReconfigure((newConfig: Config) => Netty.loadConfiguration(newConfig))
+  override def reportSpans(spans: Seq[Span.FinishedSpan]): Unit =
+    reportedSpans.addAll(spans.asJava)
 
-  private def loadConfiguration(config: Config): Unit = synchronized {
-    val nettyConfig = config.getConfig("kamon.netty")
-  }
+  def nextSpan(): Option[FinishedSpan] =
+    Option(reportedSpans.poll())
 
-  def generateHttpClientOperationName(request: HttpRequest):String = {
-    request.getUri
-  }
-
+  override def start(): Unit = {}
+  override def stop(): Unit = {}
+  override def reconfigure(config: Config): Unit = {}
 }

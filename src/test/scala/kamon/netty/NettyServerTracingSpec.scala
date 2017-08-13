@@ -1,12 +1,16 @@
 package kamon.netty
 
 import kamon.Kamon
-import kamon.testkit.BaseSpec
+import kamon.testkit.{MetricInspection, Reconfigure, TestSpanReporter}
 import kamon.trace.SpanContextCodec.ExtendedB3
-import org.scalatest.{Matchers, WordSpec}
+import kamon.util.Registration
+import org.scalatest.concurrent.Eventually
+import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpec}
+import org.scalatest.time.SpanSugar._
 
-class NettyServerTracingSpec extends WordSpec with Matchers with BaseSpec {
-  import ExtendedB3.Headers._
+class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspection with Eventually
+  with Reconfigure with BeforeAndAfterAll with OptionValues {
+
   "The Netty Server request span propagation" should {
     "Decode a HTTP Span" in {
       Servers.withNioServer() { port =>
@@ -14,19 +18,28 @@ class NettyServerTracingSpec extends WordSpec with Matchers with BaseSpec {
           val testSpan =  Kamon.buildSpan("puto").start()
           Kamon.withActiveSpan(testSpan) {
             val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
-            httpGet.headers().add(SpanIdentifier, "111")
-            httpGet.headers().add(TraceIdentifier, "222")
+            httpClient.execute(httpGet)
 
-            val response = httpClient.execute(httpGet)
-            println(response)
+            eventually(timeout(2 seconds)) {
+              val finishedSpan = reporter.nextSpan().value
+              finishedSpan.operationName shouldBe s"http://localhost:$port/route?param=123"
+            }
           }
-
-//          response.headers().get(ParentSpanIdentifier) should be("111")
-//          response.headers().get(SpanIdentifier) should not be empty
-//          response.headers().get(TraceIdentifier) should be("222")
-//          response.headers().get(Baggage) should not be empty
         }
       }
     }
+  }
+
+  @volatile var registration: Registration = _
+  val reporter = new TestSpanReporter()
+
+  override protected def beforeAll(): Unit = {
+    enableFastSpanFlushing()
+    sampleAlways()
+    registration = Kamon.addReporter(reporter)
+  }
+
+  override protected def afterAll(): Unit = {
+    registration.cancel()
   }
 }

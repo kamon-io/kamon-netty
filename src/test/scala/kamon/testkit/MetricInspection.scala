@@ -19,7 +19,7 @@ import kamon.metric._
 
 import scala.collection.concurrent.TrieMap
 
-trait BaseSpec {
+trait MetricInspection {
 
   implicit class MetricSyntax(metric: kamon.metric.Metric[_]) {
     def  valuesForTag(tag: String): Seq[String] = {
