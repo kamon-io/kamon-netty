@@ -17,9 +17,14 @@
 package kamon.netty
 
 import com.typesafe.config.Config
+import io.netty.handler.codec.http.HttpRequest
 import kamon.Kamon
 
 object Netty {
+  def generateHttpClientOperationName(request: HttpRequest):String = {
+    request.getUri
+  }
+
 
   loadConfiguration(Kamon.config())
 

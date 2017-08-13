@@ -25,10 +25,6 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http._
 import io.netty.handler.stream.ChunkedWriteHandler
-import kamon.Kamon
-import kamon.netty.instrumentation.ChannelSpanAware
-import kamon.netty.util.HttpUtils
-import kamon.trace.SpanContextCodec
 
 
 class NioEventLoopBasedServer(port: Int) {
@@ -100,8 +96,6 @@ private class HttpServerHandler extends ChannelInboundHandlerAdapter {
       val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(Content))
       response.headers.set("Content-Type", "text/plain")
       response.headers.set("Content-Length", response.content.readableBytes)
-      // Introduce current span in order to validate it on the tests
-      Kamon.inject(ctx.channel().asInstanceOf[ChannelSpanAware].span.context(), SpanContextCodec.Format.HttpHeaders, HttpUtils.textMapForHttpResponse(response))
       ctx.write(response).addListener(ChannelFutureListener.CLOSE)
     }
   }
