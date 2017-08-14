@@ -18,13 +18,14 @@ package kamon.netty
 
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.buffer.Unpooled
-import io.netty.channel._
 import io.netty.channel.epoll.{EpollEventLoopGroup, EpollServerSocketChannel}
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
+import io.netty.channel.{ChannelFutureListener, _}
 import io.netty.handler.codec.http._
 import io.netty.handler.stream.ChunkedWriteHandler
+
 
 
 class NioEventLoopBasedServer(port: Int) {
@@ -85,18 +86,24 @@ private class HttpServerInitializer extends ChannelInitializer[SocketChannel] {
 }
 
 private class HttpServerHandler extends ChannelInboundHandlerAdapter {
-  private val Content = Array[Byte]('H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd')
+  private val ContentOk = Array[Byte]('H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd')
+  private val ContentError = Array[Byte]('E', 'r', 'r', 'o', 'r')
 
   override def channelRead(ctx: ChannelHandlerContext, msg: scala.Any): Unit = {
     if (msg.isInstanceOf[HttpRequest]) {
       val request = msg.asInstanceOf[HttpRequest]
 
-      if(request.getUri.equals("/raise-exception")) throw new Exception("awesome-exception")
-
-      val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(Content))
-      response.headers.set("Content-Type", "text/plain")
-      response.headers.set("Content-Length", response.content.readableBytes)
-      ctx.write(response).addListener(ChannelFutureListener.CLOSE)
+      if(request.getUri.contains("/error")) {
+        val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR, Unpooled.wrappedBuffer(ContentError))
+        response.headers.set("Content-Type", "text/plain")
+        response.headers.set("Content-Length", response.content.readableBytes)
+        ctx.write(response).addListener(ChannelFutureListener.CLOSE)
+      } else {
+        val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(ContentOk))
+        response.headers.set("Content-Type", "text/plain")
+        response.headers.set("Content-Length", response.content.readableBytes)
+        ctx.write(response).addListener(ChannelFutureListener.CLOSE)
+      }
     }
   }
 
