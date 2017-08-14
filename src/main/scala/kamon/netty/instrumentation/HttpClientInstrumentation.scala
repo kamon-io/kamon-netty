@@ -17,20 +17,19 @@
 package kamon.netty.instrumentation
 
 import java.util
-
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.{DefaultHttpResponse, HttpRequest}
 import kamon.Kamon
 import kamon.netty.Netty
 import kamon.trace.SpanContextCodec.Format
-import kamon.trace.TextMap
+import kamon.trace._
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation._
 
 import scala.collection.mutable
 
 @Aspect
-class ClientInstrumentation {
+class HttpClientInstrumentation {
 
   @Pointcut("execution(* io.netty.handler.codec.http.HttpClientCodec.Decoder.decode(..))")
   def decoderPointcut():Unit = {}
@@ -42,7 +41,7 @@ class ClientInstrumentation {
   def onEncodeRequest(pjp: ProceedingJoinPoint, ctx: ChannelHandlerContext, httpRequest: HttpRequest, out: util.List[AnyRef]): AnyRef = {
     val activeSpan = Kamon.activeSpan()
 
-    if (activeSpan == null) {
+    if (activeSpan.isInstanceOf[Span.Empty]) {
       pjp.proceed()
     } else {
       val operationName = Netty.generateHttpClientOperationName(httpRequest)

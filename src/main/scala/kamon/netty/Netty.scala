@@ -22,7 +22,8 @@ import kamon.Kamon
 import kamon.util.DynamicAccess
 
 object Netty {
-  @volatile private var nameGenerator: NameGenerator = new DefaultNameGenerator()
+  private var nameGenerator: NameGenerator = new DefaultNameGenerator()
+
   loadConfiguration(Kamon.config())
 
   def generateOperationName(request: HttpRequest): String =
