@@ -2,11 +2,10 @@ package kamon.netty
 
 import kamon.Kamon
 import kamon.testkit.{MetricInspection, Reconfigure, TestSpanReporter}
-import kamon.trace.SpanContextCodec.ExtendedB3
 import kamon.util.Registration
 import org.scalatest.concurrent.Eventually
-import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpec}
 import org.scalatest.time.SpanSugar._
+import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpec}
 
 class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspection with Eventually
   with Reconfigure with BeforeAndAfterAll with OptionValues {

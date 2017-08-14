@@ -19,18 +19,37 @@ package kamon.netty
 import com.typesafe.config.Config
 import io.netty.handler.codec.http.HttpRequest
 import kamon.Kamon
+import kamon.util.DynamicAccess
 
 object Netty {
+  @volatile private var nameGenerator: NameGenerator = new DefaultNameGenerator()
   loadConfiguration(Kamon.config())
+
+  def generateOperationName(request: HttpRequest): String =
+    nameGenerator.generateOperationName(request)
+
+  def generateHttpClientOperationName(request: HttpRequest): String =
+    nameGenerator.generateHttpClientOperationName(request)
 
   Kamon.onReconfigure((newConfig: Config) => Netty.loadConfiguration(newConfig))
 
   private def loadConfiguration(config: Config): Unit = synchronized {
-    val nettyConfig = config.getConfig("kamon.netty")
+    val dynamic = new DynamicAccess(getClass.getClassLoader)
+    val nameGeneratorFQCN = config.getString("kamon.netty.name-generator")
+    nameGenerator = dynamic.createInstanceFor[NameGenerator](nameGeneratorFQCN, Nil).get
   }
+}
 
-  def generateHttpClientOperationName(request: HttpRequest):String = {
+trait NameGenerator {
+  def generateOperationName(request: HttpRequest): String
+  def generateHttpClientOperationName(request: HttpRequest): String
+}
+
+class DefaultNameGenerator extends NameGenerator {
+
+  override def generateHttpClientOperationName(request: HttpRequest): String =
     request.getUri
-  }
 
+  override def generateOperationName(request: HttpRequest): String =
+    request.getUri
 }
