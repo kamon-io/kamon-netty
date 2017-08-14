@@ -19,6 +19,7 @@ package kamon.netty.instrumentation
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
 import kamon.Kamon
+import kamon.netty.Netty
 import kamon.netty.util.HttpUtils
 import kamon.trace.Span
 import kamon.trace.SpanContextCodec.Format
@@ -44,10 +45,10 @@ class ChannelInstrumentation {
   @After("execution(* io.netty.handler.codec.http.HttpServerCodec.HttpServerRequestDecoder.decode(..)) && args(ctx, *, out)")
   def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[Object]): Unit = {
     if(out.size() > 0 && out.get(0).isInstanceOf[HttpRequest]) {
-      val httpRequest = out.get(0).asInstanceOf[HttpRequest]
-      val incomingSpanContext = Kamon.extract(Format.HttpHeaders, HttpUtils.textMapForHttpRequest(httpRequest))
+      val request = out.get(0).asInstanceOf[HttpRequest]
+      val incomingSpanContext = Kamon.extract(Format.HttpHeaders, HttpUtils.textMapForHttpRequest(request))
 
-      val span = Kamon.buildSpan(httpRequest.getUri)
+      val span = Kamon.buildSpan(Netty.generateOperationName(request))
         .asChildOf(incomingSpanContext)
         .withSpanTag("span.kind", "server")
         .withStartTimestamp(ctx.channel().asInstanceOf[ChannelSpanAware]._startTime)
