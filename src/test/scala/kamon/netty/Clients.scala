@@ -45,17 +45,17 @@ class NioEventLoopBasedClient(port: Int) {
     group.shutdownGracefully()
   }
 
-  def execute(request: DefaultFullHttpRequest): FullHttpResponse = {
+  def execute(request: DefaultFullHttpRequest, timeoutMillis: Long = 2000): FullHttpResponse = {
     val future = channel.write(request)
     channel.flush
-    future.await(2000)
+    future.await(timeoutMillis)
     response()
   }
 
-  def executeWithContent(request: DefaultHttpRequest, content: Seq[HttpContent]): FullHttpResponse = {
+  def executeWithContent(request: DefaultHttpRequest, content: Seq[HttpContent], timeoutMillis: Long = 2000): FullHttpResponse = {
     val allFutures = (request +: content).map(channel.write)
     channel.flush
-    allFutures.foreach(_.await(2000))
+    allFutures.foreach(_.await(timeoutMillis))
     response()
   }
 
