@@ -64,6 +64,29 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
         }
       }
     }
+
+    "contain a span error when a Internal Server Error(500) occurs" in {
+      Servers.withNioServer() { port =>
+        Clients.withNioClient(port) { httpClient =>
+          val testSpan =  Kamon.buildSpan("test-span-with-error").start()
+          Kamon.withActiveSpan(testSpan) {
+            val httpGet = httpClient.get(s"http://localhost:$port/error")
+            httpClient.execute(httpGet)
+
+            eventually(timeout(2 seconds)) {
+              val serverFinishedSpan = reporter.nextSpan().value
+              val clientFinishedSpan = reporter.nextSpan().value
+
+              serverFinishedSpan.operationName shouldBe s"http://localhost:$port/error"
+              serverFinishedSpan.tags should contain allOf("span.kind" -> TagValue.String("server"), "error" -> TagValue.String("true"))
+
+              clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
+              clientFinishedSpan.operationName shouldBe s"http://localhost:$port/error"
+            }
+          }
+        }
+      }
+    }
   }
 
   @volatile var registration: Registration = _
