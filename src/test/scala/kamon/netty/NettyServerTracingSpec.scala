@@ -62,7 +62,7 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
       }
     }
 
-    "propagate the span from the client to the server with chunk-encoded" in {
+    "propagate the span from the client to the server with chunk-encoded request" in {
       Servers.withNioServer() { port =>
         Clients.withNioClient(port) { httpClient =>
           val testSpan = Kamon.buildSpan("client-chunk-span").start()
@@ -78,6 +78,33 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
               serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
 
               clientFinishedSpan.operationName shouldBe s"http://localhost:$port/route?param=123"
+              clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
+
+              serverFinishedSpan.context.parentID shouldBe clientFinishedSpan.context.spanID
+
+              reporter.nextSpan() shouldBe empty
+            }
+          }
+        }
+      }
+    }
+
+    "propagate the span from the client to the server with chunk-encoded response" in {
+      Servers.withNioServer() { port =>
+        Clients.withNioClient(port) { httpClient =>
+          val testSpan = Kamon.buildSpan("client-chunk-span").start()
+          Kamon.withActiveSpan(testSpan) {
+            val (httpPost, chunks) = httpClient.postWithChunks(s"http://localhost:$port/fetch-in-chunks", "test 1", "test 2")
+            httpClient.executeWithContent(httpPost, chunks)
+
+            eventually(timeout(2 seconds)) {
+              val serverFinishedSpan = reporter.nextSpan().value
+              val clientFinishedSpan = reporter.nextSpan().value
+
+              serverFinishedSpan.operationName shouldBe s"http://localhost:$port/fetch-in-chunks"
+              serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
+
+              clientFinishedSpan.operationName shouldBe s"http://localhost:$port/fetch-in-chunks"
               clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
 
               serverFinishedSpan.context.parentID shouldBe clientFinishedSpan.context.spanID

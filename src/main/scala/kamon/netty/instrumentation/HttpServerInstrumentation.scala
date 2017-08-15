@@ -34,7 +34,7 @@ class HttpServerInstrumentation {
 
   @After("execution(* io.netty.handler.codec.http.HttpServerCodec.HttpServerRequestDecoder.decode(..)) && args(ctx, *, out)")
   def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[Object]): Unit = {
-    if(out.size() > 0 && out.get(0).isInstanceOf[HttpRequest]) {
+    if (out.size() > 0 && out.get(0).isInstanceOf[HttpRequest]) {
       val request = out.get(0).asInstanceOf[HttpRequest]
       val incomingSpanContext = Kamon.extract(Format.HttpHeaders, HttpUtils.textMapForHttpRequest(request))
 

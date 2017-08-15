@@ -67,7 +67,6 @@ class NioEventLoopBasedClient(port: Int) {
 
   def postWithChunks(path: String, chunks: String*): (DefaultHttpRequest, Seq[DefaultHttpContent]) = {
     val request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, path)
-//    HttpHeaders.setContentLength(request, 0)
     HttpHeaders.setTransferEncodingChunked(request)
     val httpChunks = chunks.map(chunk => new DefaultHttpContent(Unpooled.copiedBuffer(chunk, CharsetUtil.UTF_8)))
     (request, httpChunks :+ new DefaultLastHttpContent(Unpooled.EMPTY_BUFFER))

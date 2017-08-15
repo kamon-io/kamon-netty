@@ -17,8 +17,9 @@
 package kamon.netty.instrumentation
 
 import java.util
+
 import io.netty.channel.ChannelHandlerContext
-import io.netty.handler.codec.http.{DefaultHttpResponse, HttpRequest}
+import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
 import kamon.Kamon
 import kamon.netty.Netty
 import kamon.trace.SpanContextCodec.Format
@@ -60,8 +61,7 @@ class HttpClientInstrumentation {
 
   @After("decoderPointcut() && args(ctx, *, out)")
   def onDecodeRequest(ctx: ChannelHandlerContext, out: java.util.List[Object]): Unit = {
-    val  response = out.get(0)
-    if(response.isInstanceOf[DefaultHttpResponse]) {
+    if (out.size() > 0 && out.get(0).isInstanceOf[HttpResponse]) {
       val span = ctx.channel().asInstanceOf[ChannelSpanAware].span
       span.finish()
     }
