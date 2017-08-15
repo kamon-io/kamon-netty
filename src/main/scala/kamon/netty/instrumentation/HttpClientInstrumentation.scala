@@ -19,7 +19,7 @@ package kamon.netty.instrumentation
 import java.util
 
 import io.netty.channel.ChannelHandlerContext
-import io.netty.handler.codec.http.{DefaultHttpResponse, HttpRequest}
+import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
 import kamon.Kamon
 import kamon.Kamon.contextCodec
 import kamon.context.TextMap
@@ -60,16 +60,16 @@ class HttpClientInstrumentation {
 
   @After("decoderPointcut() && args(ctx, *, out)")
   def onDecodeRequest(ctx: ChannelHandlerContext, out: java.util.List[Object]): Unit = {
-    val  response = out.get(0)
-    if(response.isInstanceOf[DefaultHttpResponse]) {
+    if (out.size() > 0 && out.get(0).isInstanceOf[HttpResponse]) {
       val span = ctx.channel().asInstanceOf[ChannelContextAware].span
       span.finish()
     }
   }
 
-  @AfterThrowing("decoderPointcut() && args(ctx, *, *)")
-  def onDecodeError(ctx: ChannelHandlerContext): Unit = {
+  @AfterThrowing(pointcut = "decoderPointcut() && args(ctx, *, *)", throwing = "ex")
+  def onDecodeError(ctx: ChannelHandlerContext, ex:Exception): Unit = {
     val span = ctx.channel().asInstanceOf[ChannelContextAware].span
+    println(ex)
     span.addSpanTag("error", "true").finish()
   }
 

@@ -17,7 +17,7 @@
 package kamon.netty
 
 import io.netty.bootstrap.ServerBootstrap
-import io.netty.buffer.Unpooled
+import io.netty.buffer.{ByteBuf, Unpooled}
 import io.netty.channel.epoll.{EpollEventLoopGroup, EpollServerSocketChannel}
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
@@ -25,6 +25,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.{ChannelFutureListener, _}
 import io.netty.handler.codec.http._
 import io.netty.handler.stream.ChunkedWriteHandler
+import io.netty.util.CharsetUtil
 
 
 
@@ -93,11 +94,23 @@ private class HttpServerHandler extends ChannelInboundHandlerAdapter {
     if (msg.isInstanceOf[HttpRequest]) {
       val request = msg.asInstanceOf[HttpRequest]
 
-      if(request.getUri.contains("/error")) {
+      if (request.getUri.contains("/error")) {
         val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR, Unpooled.wrappedBuffer(ContentError))
         response.headers.set("Content-Type", "text/plain")
         response.headers.set("Content-Length", response.content.readableBytes)
         ctx.write(response).addListener(ChannelFutureListener.CLOSE)
+      } else if (request.getUri.contains("/fetch-in-chunks")) {
+        val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
+        HttpHeaders.setTransferEncodingChunked(response)
+        response.headers.set("Content-Type", "text/plain")
+
+        ctx.write(response)
+          .addListener((cf: ChannelFuture) =>
+            writeChunk(cf.channel()).addListener((cf: ChannelFuture) =>
+              writeChunk(cf.channel()).addListener((cf: ChannelFuture) =>
+                writeChunk(cf.channel()).addListener((cf: ChannelFuture) =>
+                  writeLastContent(cf.channel()).addListener(
+                    ChannelFutureListener.CLOSE)))))
       } else {
         val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(ContentOk))
         response.headers.set("Content-Type", "text/plain")
@@ -112,4 +125,12 @@ private class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit =
     ctx.close()
+
+  private def writeChunk(channel: Channel, content: ByteBuf = Unpooled.wrappedBuffer(ContentOk)): ChannelFuture = {
+    channel.writeAndFlush(new DefaultHttpContent(Unpooled.copiedBuffer("chunkkkkkkkkkkkkk", CharsetUtil.UTF_8)))
+  }
+
+  private def writeLastContent(channel: Channel): ChannelFuture = {
+    channel.writeAndFlush(new DefaultLastHttpContent(Unpooled.EMPTY_BUFFER))
+  }
 }

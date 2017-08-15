@@ -20,11 +20,13 @@ import java.net.InetSocketAddress
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
 import io.netty.bootstrap.Bootstrap
+import io.netty.buffer.{ByteBuf, Unpooled}
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.channel.{Channel, ChannelHandlerContext, ChannelInboundHandlerAdapter, ChannelInitializer}
 import io.netty.handler.codec.http._
+import io.netty.util.CharsetUtil
 
 class NioEventLoopBasedClient(port: Int) {
 
@@ -43,10 +45,17 @@ class NioEventLoopBasedClient(port: Int) {
     group.shutdownGracefully()
   }
 
-  def execute(request: DefaultFullHttpRequest): FullHttpResponse = {
+  def execute(request: DefaultFullHttpRequest, timeoutMillis: Long = 2000): FullHttpResponse = {
     val future = channel.write(request)
     channel.flush
-    future.await(2000)
+    future.await(timeoutMillis)
+    response()
+  }
+
+  def executeWithContent(request: DefaultHttpRequest, content: Seq[HttpContent], timeoutMillis: Long = 2000): FullHttpResponse = {
+    val allFutures = (request +: content).map(channel.write)
+    channel.flush
+    allFutures.foreach(_.await(timeoutMillis))
     response()
   }
 
@@ -54,6 +63,13 @@ class NioEventLoopBasedClient(port: Int) {
     val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, path)
     HttpHeaders.setContentLength(request, 0)
     request
+  }
+
+  def postWithChunks(path: String, chunks: String*): (DefaultHttpRequest, Seq[DefaultHttpContent]) = {
+    val request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, path)
+    HttpHeaders.setTransferEncodingChunked(request)
+    val httpChunks = chunks.map(chunk => new DefaultHttpContent(Unpooled.copiedBuffer(chunk, CharsetUtil.UTF_8)))
+    (request, httpChunks :+ new DefaultLastHttpContent(Unpooled.EMPTY_BUFFER))
   }
 
   private def response(): FullHttpResponse =
