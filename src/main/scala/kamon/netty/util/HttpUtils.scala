@@ -1,7 +1,7 @@
 package kamon.netty.util
 
 import io.netty.handler.codec.http.{HttpHeaders, HttpRequest, HttpResponse}
-import kamon.trace.TextMap
+import kamon.context.TextMap
 
 object HttpUtils {
 

@@ -18,7 +18,7 @@ package kamon.netty
 
 import kamon.Kamon
 import kamon.metric._
-import kamon.util.MeasurementUnit._
+import kamon.metric.MeasurementUnit._
 
 
 object Metrics {

@@ -17,16 +17,16 @@
 package kamon.netty.instrumentation
 
 import java.util
+
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.{DefaultHttpResponse, HttpRequest}
 import kamon.Kamon
+import kamon.Kamon.contextCodec
+import kamon.context.TextMap
 import kamon.netty.Netty
-import kamon.trace.SpanContextCodec.Format
 import kamon.trace._
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation._
-
-import scala.collection.mutable
 
 @Aspect
 class HttpClientInstrumentation {
@@ -39,20 +39,20 @@ class HttpClientInstrumentation {
 
   @Around("encoderPointcut() && args(ctx, httpRequest, out)")
   def onEncodeRequest(pjp: ProceedingJoinPoint, ctx: ChannelHandlerContext, httpRequest: HttpRequest, out: util.List[AnyRef]): AnyRef = {
-    val activeSpan = Kamon.activeSpan()
+    val currentContext = Kamon.currentContext()
+    val currentSpan = currentContext.get(Span.ContextKey)
 
-    if (activeSpan.isInstanceOf[Span.Empty]) {
+    if (currentSpan.isEmpty()) {
       pjp.proceed()
     } else {
       val operationName = Netty.generateHttpClientOperationName(httpRequest)
-      val clientRequestSpan = Kamon.buildSpan(operationName).asChildOf(activeSpan.context()).start()
+      val clientRequestSpan = Kamon.buildSpan(operationName).asChildOf(currentSpan).start()
       clientRequestSpan.addSpanTag("span.kind", "client")
 
-      val maybeHeaders = mutable.Map.empty[String, String]
-      Kamon.inject(clientRequestSpan.context(), Format.HttpHeaders, writeOnlyTextMapFromMap(maybeHeaders))
-      maybeHeaders.foreach { case (key, value) => httpRequest.headers().add(key, value) }
+      val textMap = contextCodec().HttpHeaders.encode(currentContext)
+      textMap.values.foreach { case (key, value) => httpRequest.headers().add(key, value) }
 
-      ctx.channel().asInstanceOf[ChannelSpanAware].span = clientRequestSpan
+      ctx.channel().asInstanceOf[ChannelContextAware].span = clientRequestSpan
 
       pjp.proceed(Array(ctx, httpRequest, out))
     }
@@ -62,14 +62,14 @@ class HttpClientInstrumentation {
   def onDecodeRequest(ctx: ChannelHandlerContext, out: java.util.List[Object]): Unit = {
     val  response = out.get(0)
     if(response.isInstanceOf[DefaultHttpResponse]) {
-      val span = ctx.channel().asInstanceOf[ChannelSpanAware].span
+      val span = ctx.channel().asInstanceOf[ChannelContextAware].span
       span.finish()
     }
   }
 
   @AfterThrowing("decoderPointcut() && args(ctx, *, *)")
   def onDecodeError(ctx: ChannelHandlerContext): Unit = {
-    val span = ctx.channel().asInstanceOf[ChannelSpanAware].span
+    val span = ctx.channel().asInstanceOf[ChannelContextAware].span
     span.addSpanTag("error", "true").finish()
   }
 

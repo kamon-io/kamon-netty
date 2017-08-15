@@ -19,9 +19,10 @@ package kamon.netty.instrumentation
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
 import kamon.Kamon
+import kamon.Kamon.contextCodec
 import kamon.netty.Netty
 import kamon.netty.util.HttpUtils
-import kamon.trace.SpanContextCodec.Format
+import kamon.trace.Span
 import kamon.util.Clock
 import org.aspectj.lang.annotation.{After, Aspect, Before}
 
@@ -29,28 +30,29 @@ import org.aspectj.lang.annotation.{After, Aspect, Before}
 class HttpServerInstrumentation {
 
   @Before("execution(* io.netty.channel.ChannelHandlerContext+.fireChannelRead(..)) && this(ctx) && args(request)")
-  def onFireChannelRead(ctx:ChannelSpanAware, request: HttpRequest): Unit =
+  def onFireChannelRead(ctx:ChannelContextAware, request: HttpRequest): Unit =
     ctx._startTime = Clock.microTimestamp()
 
   @After("execution(* io.netty.handler.codec.http.HttpServerCodec.HttpServerRequestDecoder.decode(..)) && args(ctx, *, out)")
   def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[Object]): Unit = {
     if(out.size() > 0 && out.get(0).isInstanceOf[HttpRequest]) {
       val request = out.get(0).asInstanceOf[HttpRequest]
-      val incomingSpanContext = Kamon.extract(Format.HttpHeaders, HttpUtils.textMapForHttpRequest(request))
+
+      val incomingSpan = contextCodec().HttpHeaders.decode(HttpUtils.textMapForHttpRequest(request)).get(Span.ContextKey)
 
       val span = Kamon.buildSpan(Netty.generateOperationName(request))
-        .asChildOf(incomingSpanContext)
+        .asChildOf(incomingSpan)
         .withSpanTag("span.kind", "server")
-        .withStartTimestamp(ctx.channel().asInstanceOf[ChannelSpanAware]._startTime)
+        .withStartTimestamp(ctx.channel().asInstanceOf[ChannelContextAware]._startTime)
         .start()
 
-      ctx.channel().asInstanceOf[ChannelSpanAware].span = span
+      ctx.channel().asInstanceOf[ChannelContextAware].span = span
     }
   }
 
   @Before("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, response, *)")
   def onEncodeResponse(ctx: ChannelHandlerContext, response:HttpResponse): Unit = {
-    val span = ctx.channel().asInstanceOf[ChannelSpanAware].span
+    val span = ctx.channel().asInstanceOf[ChannelContextAware].span
 
     if(isError(response.getStatus.code())) {
       span.addSpanTag("error", "true")

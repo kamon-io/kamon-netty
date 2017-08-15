@@ -20,11 +20,11 @@ import java.util
 
 import io.netty.channel.EventLoop
 import kamon.Kamon
+import kamon.context.{Context, HasContext}
 import kamon.netty.Metrics
 import kamon.netty.Metrics.EventLoopMetrics
 import kamon.netty.util.EventLoopUtils.name
-import kamon.trace.Span
-import kamon.util.{Clock, HasSpan}
+import kamon.util.Clock
 
 class MonitoredQueue(eventLoop:EventLoop, underlying:util.Queue[Runnable]) extends QueueWrapperAdapter[Runnable](underlying) {
 
@@ -69,12 +69,12 @@ object MonitoredQueue {
 
 }
 
-private[this] class TimedTask(underlying:Runnable)(implicit metrics: EventLoopMetrics) extends Runnable with HasSpan {
+private[this] class TimedTask(underlying:Runnable)(implicit metrics: EventLoopMetrics) extends Runnable with HasContext {
   val startTime:Long =  Clock.relativeNanoTimestamp()
-  val span: Span = Kamon.activeSpan()
+  val context: Context = Kamon.currentContext()
 
   override def run(): Unit =
-    Kamon.withActiveSpan(span) {
+    Kamon.withContext(context) {
       Latency.measure(metrics.taskProcessingTime)(underlying.run())
     }
 

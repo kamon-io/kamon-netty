@@ -1,12 +1,14 @@
 package kamon.netty
 
 import kamon.Kamon
-import kamon.testkit.{MetricInspection, Reconfigure, TestSpanReporter}
+import kamon.context.Context
+import kamon.testkit.{MetricInspection, Reconfigure, SpanInspector, TestSpanReporter}
+import kamon.trace.Span
 import kamon.trace.Span.TagValue
 import kamon.util.Registration
+import org.scalatest._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.SpanSugar._
-import org.scalatest._
 
 class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspection with Eventually
   with Reconfigure with BeforeAndAfterAll with OptionValues {
@@ -15,8 +17,8 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
     "propagate the span from the client to the server" in {
       Servers.withNioServer() { port =>
         Clients.withNioClient(port) { httpClient =>
-          val testSpan =  Kamon.buildSpan("test-span").start()
-          Kamon.withActiveSpan(testSpan) {
+          val testSpan = Kamon.buildSpan("test-span").start()
+          Kamon.withContext(Context.create(Span.ContextKey, testSpan)) {
             val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
             httpClient.execute(httpGet)
 
@@ -25,10 +27,10 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
               val clientFinishedSpan = reporter.nextSpan().value
 
               serverFinishedSpan.operationName shouldBe s"http://localhost:$port/route?param=123"
-              serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
+              serverFinishedSpan.tags should contain("span.kind" -> TagValue.String("server"))
 
               clientFinishedSpan.operationName shouldBe s"http://localhost:$port/route?param=123"
-              clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
+              clientFinishedSpan.tags should contain("span.kind" -> TagValue.String("client"))
             }
           }
         }
@@ -39,7 +41,7 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
       Servers.withNioServer() { port =>
         Clients.withNioClient(port) { httpClient =>
           val testSpan =  Kamon.buildSpan("test-span-with-error").start()
-          Kamon.withActiveSpan(testSpan) {
+          Kamon.withContext(Context.create(Span.ContextKey, testSpan)) {
             val httpGet = httpClient.get(s"http://localhost:$port/error")
             httpClient.execute(httpGet)
 
@@ -71,4 +73,7 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
   override protected def afterAll(): Unit = {
     registration.cancel()
   }
+
+  def inspect(span: Span): SpanInspector =
+    SpanInspector(span)
 }

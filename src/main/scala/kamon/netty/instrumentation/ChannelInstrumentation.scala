@@ -20,7 +20,7 @@ import kamon.trace.Span
 import org.aspectj.lang.annotation._
 
 
-trait ChannelSpanAware {
+trait ChannelContextAware {
   @volatile var _startTime: Long = 0
   @volatile var  span: Span = _
 }
@@ -29,5 +29,5 @@ trait ChannelSpanAware {
 class ChannelInstrumentation {
 
   @DeclareMixin("io.netty.channel.Channel+")
-  def mixinHasSpanToTimeAware: ChannelSpanAware =  new ChannelSpanAware{}
+  def mixinChannelToContextAware: ChannelContextAware =  new ChannelContextAware{}
 }
