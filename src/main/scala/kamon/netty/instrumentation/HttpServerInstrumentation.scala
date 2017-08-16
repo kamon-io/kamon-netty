@@ -37,7 +37,6 @@ class HttpServerInstrumentation {
     if (out.size() > 0 && out.get(0).isInstanceOf[HttpRequest]) {
       val request = out.get(0).asInstanceOf[HttpRequest]
       val currentContext = ctx.channel().asInstanceOf[ChannelContextAware]
-
       val incomingSpan = Kamon.contextCodec.HttpHeaders.decode(HttpUtils.textMapForHttpRequest(request)).get(Span.ContextKey)
 
       val span = Kamon.buildSpan(Netty.generateOperationName(request))
