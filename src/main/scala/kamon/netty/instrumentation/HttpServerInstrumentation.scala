@@ -17,7 +17,7 @@
 package kamon.netty.instrumentation
 
 import io.netty.channel.ChannelHandlerContext
-import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
+import io.netty.handler.codec.http.HttpResponse
 import kamon.Kamon
 import kamon.netty.Netty
 import kamon.trace.Span
@@ -28,32 +28,30 @@ class HttpServerInstrumentation {
 
   @After("execution(* io.netty.handler.codec.http.HttpServerCodec.HttpServerRequestDecoder.decode(..)) && args(ctx, *, out)")
   def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[AnyRef]): Unit = {
-    if (out.size() > 0 && out.get(0).isInstanceOf[HttpRequest]) {
-      val request = out.get(0).asInstanceOf[HttpRequest]
+    if (out.size() > 0 && out.get(0).isHttpRequest()) {
+      val request = out.get(0).toHttpRequest()
       val channel = ctx.channel().toContextAware()
-      val incomingSpan = Kamon.contextCodec.HttpHeaders.decode(textMapForHttpRequest(request)).get(Span.ContextKey)
+      val incomingContext = decodeContext(request)
 
-      val span = Kamon.buildSpan(Netty.generateOperationName(request))
-        .asChildOf(incomingSpan)
+      val serverSpan = Kamon.buildSpan(Netty.generateOperationName(request))
+        .asChildOf(incomingContext.get(Span.ContextKey))
+        .withStartTimestamp(channel.startTime)
         .withSpanTag("span.kind", "server")
         .withSpanTag("component", "netty")
-        .withStartTimestamp(channel.startTime)
+        .withSpanTag("http.method", request.getMethod.name())
+        .withSpanTag("http.url", request.getUri)
         .start()
 
-      channel.setContext(channel.context.withKey(Span.ContextKey, span))
+      channel.setContext(incomingContext.withKey(Span.ContextKey, serverSpan))
     }
   }
 
   @Before("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, response, *)")
   def onEncodeResponse(ctx: ChannelHandlerContext, response:HttpResponse): Unit = {
-    val span = ctx.channel().toContextAware().context.get(Span.ContextKey)
-    if(isError(response.getStatus.code())) {
-      span.addSpanTag("error", "true")
-    }
-    span.finish()
+    val serverSpan = ctx.channel().toContextAware().context.get(Span.ContextKey)
+    if(isError(response.getStatus.code()))
+      serverSpan.addSpanTag("error", value = true)
+    serverSpan.finish()
   }
-
-  private def isError(statusCode: Int): Boolean =
-    statusCode >= 500 && statusCode < 600
 }
 

@@ -16,8 +16,9 @@
 
 package kamon.netty
 
-import io.netty.handler.codec.http.HttpRequest
-import kamon.context.TextMap
+import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
+import kamon.Kamon
+import kamon.context.{Context, TextMap}
 
 package object instrumentation {
 
@@ -26,11 +27,40 @@ package object instrumentation {
       channel.asInstanceOf[ChannelContextAware]
   }
 
-  def textMapForHttpRequest(request: HttpRequest): TextMap = new TextMap {
+  implicit class HttpSyntax(val obj: AnyRef) extends AnyVal {
+    def toHttpRequest(): HttpRequest =
+      obj.asInstanceOf[HttpRequest]
+
+    def isHttpRequest(): Boolean =
+      obj.isInstanceOf[HttpRequest]
+
+    def toHttpResponse(): HttpResponse =
+      obj.asInstanceOf[HttpResponse]
+
+    def isHttpResponse(): Boolean =
+      obj.isInstanceOf[HttpResponse]
+  }
+
+  def isError(statusCode: Int): Boolean =
+    statusCode >= 500 && statusCode < 600
+
+  def encodeTextMapToRequest(ctx:Context, request:HttpRequest):Unit = {
+    val textMap = Kamon.contextCodec().HttpHeaders.encode(ctx)
+    textMap.values.foreach { case (key, value) => request.headers().add(key, value) }
+  }
+
+  def decodeContext(request: HttpRequest): Context = {
+    val headersTextMap = readOnlyTextMapFromHeaders(request)
+    Kamon.contextCodec().HttpHeaders.decode(headersTextMap)
+  }
+
+  private def readOnlyTextMapFromHeaders(request: HttpRequest): TextMap = new TextMap {
     import scala.collection.JavaConverters._
 
-    override def values: Iterator[(String, String)] = request.headers().iterator().asScala.map(elemnt => (elemnt.getKey, elemnt.getValue))
-    override def get(key: String): Option[String] = Option(request.headers.get(key))
-    override def put(key: String, value: String): Unit = request.headers.set(key, value)
+    private val headersMap = request.headers().iterator().asScala.map { h => h.getKey -> h.getValue }.toMap
+
+    override def values: Iterator[(String, String)] = headersMap.iterator
+    override def get(key: String): Option[String] = headersMap.get(key)
+    override def put(key: String, value: String): Unit = {}
   }
 }

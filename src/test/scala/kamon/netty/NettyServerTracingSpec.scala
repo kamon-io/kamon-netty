@@ -68,7 +68,7 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
               val clientFinishedSpan = reporter.nextSpan().value
 
               serverFinishedSpan.operationName shouldBe s"http://localhost:$port/error"
-              serverFinishedSpan.tags should contain allOf("span.kind" -> TagValue.String("server"), "error" -> TagValue.String("true"))
+              serverFinishedSpan.tags should contain allOf("span.kind" -> TagValue.String("server"), "error" -> TagValue.True)
 
               clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
               clientFinishedSpan.operationName shouldBe s"http://localhost:$port/error"
