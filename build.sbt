@@ -24,7 +24,10 @@ val logback         = "ch.qos.logback"  %  "logback-classic"                % "1
 
 
 lazy val root = (project in file("."))
-  .settings(name := "kamon-netty")
+  .settings(Seq(
+      name := "kamon-netty",
+      scalaVersion := "2.12.3",
+      crossScalaVersions := Seq("2.11.8", "2.12.3")))
   .enablePlugins(JavaAgent)
   .settings(isSnapshot := true)
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
