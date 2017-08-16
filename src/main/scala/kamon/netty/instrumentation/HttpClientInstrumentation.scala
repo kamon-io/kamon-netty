@@ -46,6 +46,7 @@ class HttpClientInstrumentation {
       val clientRequestSpan = Kamon.buildSpan(operationName)
         .asChildOf(currentSpan)
         .withSpanTag("span.kind", "client")
+        .withSpanTag("component", "netty")
         .start()
 
       val textMap = Kamon.contextCodec.HttpHeaders.encode(channel.context)

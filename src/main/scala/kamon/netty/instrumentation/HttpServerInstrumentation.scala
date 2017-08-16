@@ -36,6 +36,7 @@ class HttpServerInstrumentation {
       val span = Kamon.buildSpan(Netty.generateOperationName(request))
         .asChildOf(incomingSpan)
         .withSpanTag("span.kind", "server")
+        .withSpanTag("component", "netty")
         .withStartTimestamp(channel.startTime)
         .start()
 
