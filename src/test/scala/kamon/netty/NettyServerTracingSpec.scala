@@ -39,7 +39,7 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
       }
     }
 
-    "contain a span error when a Internal Server Error(500) occurs" in {
+    "contain a span error when a internal server error(500) occurs" in {
       withNioServer() { port =>
         withNioClient(port) { httpClient =>
           val span =  Kamon.buildSpan("test-span-with-error").start()

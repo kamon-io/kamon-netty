@@ -21,7 +21,6 @@ import java.util
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
 import kamon.Kamon
-import kamon.Kamon.contextCodec
 import kamon.context.TextMap
 import kamon.netty.Netty
 import kamon.trace._
@@ -50,10 +49,10 @@ class HttpClientInstrumentation {
         .withSpanTag("span.kind", "client")
         .start()
 
-      val textMap = contextCodec().HttpHeaders.encode(currentContext.context)
+      val textMap = Kamon.contextCodec.HttpHeaders.encode(currentContext.context)
       textMap.values.foreach { case (key, value) => httpRequest.headers().add(key, value) }
 
-      currentContext.setContext(currentContext.context.withKey(Span.ContextKey,clientRequestSpan))
+      currentContext.setContext(currentContext.context.withKey(Span.ContextKey, clientRequestSpan))
 
       pjp.proceed(Array(ctx, httpRequest, out))
     }
@@ -67,8 +66,8 @@ class HttpClientInstrumentation {
     }
   }
 
-  @AfterThrowing(pointcut = "decoderPointcut() && args(ctx, *, *)", throwing = "ex")
-  def onDecodeError(ctx: ChannelHandlerContext, ex:Exception): Unit = {
+  @AfterThrowing("decoderPointcut() && args(ctx, *, *)")
+  def onDecodeError(ctx: ChannelHandlerContext): Unit = {
     val span = ctx.channel().asInstanceOf[ChannelContextAware].context.get(Span.ContextKey)
     span.addSpanTag("error", "true").finish()
   }

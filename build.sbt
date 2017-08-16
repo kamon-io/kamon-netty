@@ -13,16 +13,14 @@
  * =========================================================================================
  */
 
+val kamonCore       = "io.kamon"        %% "kamon-core"                     % "1.0.0-RC1-61029e115272b9af3f4460b311d3a2e650c806e3"
+val kamonTestkit    = "io.kamon"        %% "kamon-testkit"                  % "1.0.0-RC1-61029e115272b9af3f4460b311d3a2e650c806e3"
 
-val kamonCore = "io.kamon" %% "kamon-core" % "1.0.0-RC1-61029e115272b9af3f4460b311d3a2e650c806e3"
-val kamonTestkit = "io.kamon" %% "kamon-testkit" % "1.0.0-RC1-61029e115272b9af3f4460b311d3a2e650c806e3"
+val scalaExtension  = "io.kamon"        %% "agent-scala-extension"          % "0.0.3-experimental"
 
-val scalaExtension    = "io.kamon"    %% "agent-scala-extension"        % "0.0.3-experimental"
-
-val netty             = "io.netty"    %  "netty-all"                    % "4.0.50.Final"
-val nettyNative       ="io.netty"     % "netty-transport-native-epoll"  % "4.0.50.Final" classifier "linux-x86_64"
-
-val logback           = "ch.qos.logback"            %   "logback-classic"       % "1.0.13"
+val netty           = "io.netty"        %  "netty-all"                      % "4.0.50.Final"
+val nettyNative     = "io.netty"        %  "netty-transport-native-epoll"   % "4.0.50.Final"    classifier "linux-x86_64"
+val logback         = "ch.qos.logback"  %  "logback-classic"                % "1.0.13"
 
 
 lazy val root = (project in file("."))
@@ -31,11 +29,11 @@ lazy val root = (project in file("."))
   .settings(isSnapshot := true)
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
 //  .settings(javaAgents += "io.kamon"    % "kamon-agent"   % "0.0.3-experimental"  % "compile;test")
-  .settings(javaAgents += "org.aspectj"    % "aspectjweaver"   % "1.8.10"  % "compile;test;runtime")
+  .settings(javaAgents += "org.aspectj" % "aspectjweaver"  % "1.8.10"  % "compile;test;runtime")
   .settings(
     libraryDependencies ++=
-      compileScope(kamonCore, scalaExtension, netty, logback, nettyNative) ++
-//      providedScope(netty, nettyNative) ++
-      testScope(scalatest, kamonTestkit, logbackClassic))
+      compileScope(kamonCore) ++
+      providedScope(netty, nettyNative) ++
+      testScope(scalatest, kamonTestkit, logbackClassic, logback))
 
 

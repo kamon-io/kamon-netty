@@ -10,7 +10,7 @@
         <aspect name="kamon.netty.instrumentation.HttpClientInstrumentation"/>
         <aspect name="kamon.netty.instrumentation.HttpServerInstrumentation"/>
     </aspects>
-    <weaver options="-verbose">
+    <weaver>
         <include within="kamon.netty..*"/>
         <include within="io.netty..*"/>
     </weaver>
