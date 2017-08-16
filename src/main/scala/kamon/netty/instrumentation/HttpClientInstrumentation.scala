@@ -21,7 +21,6 @@ import java.util
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
 import kamon.Kamon
-import kamon.context.TextMap
 import kamon.netty.Netty
 import kamon.trace._
 import org.aspectj.lang.ProceedingJoinPoint
@@ -59,7 +58,7 @@ class HttpClientInstrumentation {
   }
 
   @After("decoderPointcut() && args(ctx, *, out)")
-  def onDecodeResponse(ctx: ChannelHandlerContext, out: java.util.List[Object]): Unit = {
+  def onDecodeResponse(ctx: ChannelHandlerContext, out: java.util.List[AnyRef]): Unit = {
     if (out.size() > 0 && out.get(0).isInstanceOf[HttpResponse]) {
       val span = ctx.channel().toContextAware().context.get(Span.ContextKey)
       span.finish()

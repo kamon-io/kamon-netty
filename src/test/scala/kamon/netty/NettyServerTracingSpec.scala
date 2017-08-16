@@ -86,7 +86,7 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
             val (httpPost, chunks) = httpClient.postWithChunks(s"http://localhost:$port/fetch-in-chunks", "test 1", "test 2")
             httpClient.executeWithContent(httpPost, chunks)
 
-            eventually(timeout(5 seconds)) {
+            eventually(timeout(2 seconds)) {
               val serverFinishedSpan = reporter.nextSpan().value
               val clientFinishedSpan = reporter.nextSpan().value
 

@@ -16,6 +16,8 @@
 
 package kamon.netty.instrumentation
 
+import io.netty.channel.{Channel, ChannelHandler, ChannelHandlerContext, ChannelInboundHandlerAdapter}
+import kamon.util.Clock
 import org.aspectj.lang.annotation._
 
 @Aspect
@@ -33,17 +35,31 @@ class ServerBootstrapInstrumentation {
       workerGroup.name = WorkerGroupName
     }
   }
+
+  @After("execution(* io.netty.bootstrap.ServerBootstrap.ServerBootstrapAcceptor.channelRead(..)) && args(ctx, child)")
+  def onChannelRead(ctx: ChannelHandlerContext, child: Channel):Unit = {
+    val pipeline = child.pipeline()
+    if(pipeline.get(KamonHandler) == null)
+      pipeline.addFirst(KamonHandler, new KamonHandler())
+  }
 }
 
 object ServerBootstrapInstrumentation {
   val BossGroupName = "boss-group"
   val WorkerGroupName = "worker-group"
-}
+  val KamonHandler = "kamon-handler"
 
+  @ChannelHandler.Sharable
+  private class KamonHandler extends ChannelInboundHandlerAdapter {
+    override def channelRead(ctx: ChannelHandlerContext, msg: scala.Any): Unit = {
+      ctx.channel().toContextAware().startTime = Clock.microTimestamp()
+      super.channelRead(ctx, msg)
+    }
+  }
+}
 
 @Aspect
 class EventLoopMixin {
-
   @DeclareMixin("io.netty.channel.EventLoopGroup+")
   def mixinEventLoopGroupWithNamedEventLoopGroup: NamedEventLoopGroup = new NamedEventLoopGroup {}
 }
