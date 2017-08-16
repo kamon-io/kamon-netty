@@ -16,18 +16,21 @@
 
 package kamon.netty.instrumentation
 
-import kamon.trace.Span
+import kamon.Kamon
+import kamon.context.Context
 import org.aspectj.lang.annotation._
+
+import scala.beans.BeanProperty
 
 
 trait ChannelContextAware {
-  @volatile var _startTime: Long = 0
-  @volatile var  span: Span = _
+  @volatile var startTime: Long = 0
+  @volatile @BeanProperty var context:Context = Kamon.currentContext()
 }
+
 
 @Aspect
 class ChannelInstrumentation {
-
   @DeclareMixin("io.netty.channel.Channel+")
   def mixinChannelToContextAware: ChannelContextAware =  new ChannelContextAware{}
 }

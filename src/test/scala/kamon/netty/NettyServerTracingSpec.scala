@@ -2,6 +2,8 @@ package kamon.netty
 
 import kamon.Kamon
 import kamon.context.Context
+import kamon.netty.Clients.withNioClient
+import kamon.netty.Servers.withNioServer
 import kamon.testkit.{MetricInspection, Reconfigure, TestSpanReporter}
 import kamon.trace.Span
 import kamon.trace.Span.TagValue
@@ -12,10 +14,11 @@ import org.scalatest.time.SpanSugar._
 
 class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspection with Eventually
   with Reconfigure with BeforeAndAfterAll with OptionValues {
+
   "The Netty Server request span propagation" should {
     "propagate the span from the client to the server" in {
-      Servers.withNioServer() { port =>
-        Clients.withNioClient(port) { httpClient =>
+      withNioServer() { port =>
+        withNioClient(port) { httpClient =>
           val span =  Kamon.buildSpan("test-span").start()
           Kamon.withContext(Context.create(Span.ContextKey, span)) {
             val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
@@ -37,8 +40,8 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
     }
 
     "contain a span error when a Internal Server Error(500) occurs" in {
-      Servers.withNioServer() { port =>
-        Clients.withNioClient(port) { httpClient =>
+      withNioServer() { port =>
+        withNioClient(port) { httpClient =>
           val span =  Kamon.buildSpan("test-span-with-error").start()
           Kamon.withContext(Context.create(Span.ContextKey, span)) {
             val httpGet = httpClient.get(s"http://localhost:$port/error")
@@ -60,8 +63,8 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
     }
 
     "propagate the span from the client to the server with chunk-encoded request" in {
-      Servers.withNioServer() { port =>
-        Clients.withNioClient(port) { httpClient =>
+      withNioServer() { port =>
+        withNioClient(port) { httpClient =>
           val span = Kamon.buildSpan("client-chunk-span").start()
           Kamon.withContext(Context.create(Span.ContextKey, span)) {
             val (httpPost, chunks) = httpClient.postWithChunks(s"http://localhost:$port/fetch-in-chunks", "test 1", "test 2")
@@ -88,8 +91,8 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
     }
 
     "propagate the span from the client to the server with chunk-encoded response" in {
-      Servers.withNioServer() { port =>
-        Clients.withNioClient(port) { httpClient =>
+      withNioServer() { port =>
+        withNioClient(port) { httpClient =>
           val span = Kamon.buildSpan("client-chunk-span").start()
           Kamon.withContext(Context.create(Span.ContextKey, span)) {
             val (httpPost, chunks) = httpClient.postWithChunks(s"http://localhost:$port/fetch-in-chunks", "test 1", "test 2")
@@ -116,8 +119,8 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
     }
 
     "create a new span when it's coming a request without one" in {
-      Servers.withNioServer() { port =>
-        Clients.withNioClient(port) { httpClient =>
+      withNioServer() { port =>
+        withNioClient(port) { httpClient =>
           val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
           httpClient.execute(httpGet)
 

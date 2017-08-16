@@ -16,7 +16,9 @@
 
 package kamon.netty
 
+import kamon.netty.Clients.withNioClient
 import kamon.netty.Metrics.{registeredChannelsMetric, taskProcessingTimeMetric, taskQueueSizeMetric, taskWaitingTimeMetric}
+import kamon.netty.Servers.{withEpollServer, withNioServer}
 import kamon.testkit.MetricInspection
 import org.scalatest.{Matchers, WordSpec}
 
@@ -25,8 +27,8 @@ class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
   "The NettyMetrics" should {
 
     "track the NioEventLoop in boss-group and worker-group" in {
-      Servers.withNioServer() { port =>
-        Clients.withNioClient(port) { httpClient =>
+      withNioServer() { port =>
+        withNioClient(port) { httpClient =>
           val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
           httpClient.execute(httpGet)
 
@@ -39,8 +41,8 @@ class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
     }
 
     "track the EpollEventLoop in boss-group and worker-group" in {
-      Servers.withEpollServer() { port =>
-        Clients.withNioClient(port) { httpClient =>
+      withEpollServer() { port =>
+        withNioClient(port) { httpClient =>
           val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
           httpClient.execute(httpGet)
 
@@ -53,8 +55,8 @@ class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
     }
 
     "track the registered channels, task processing time and task queue size for NioEventLoop" in {
-      Servers.withNioServer() { port =>
-        Clients.withNioClient(port) { httpClient =>
+      withNioServer() { port =>
+        withNioClient(port) { httpClient =>
           val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
           val response = httpClient.execute(httpGet)
           response.getStatus.code() should be(200)
@@ -72,8 +74,8 @@ class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
     }
 
     "track the registered channels, task processing time and task queue size for EpollEventLoop" in {
-      Servers.withEpollServer() { port =>
-        Clients.withNioClient(port) { httpClient =>
+      withEpollServer() { port =>
+        withNioClient(port) { httpClient =>
           val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
           val response = httpClient.execute(httpGet)
           response.getStatus.code() should be(200)

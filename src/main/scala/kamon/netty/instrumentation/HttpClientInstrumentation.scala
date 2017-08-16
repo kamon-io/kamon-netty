@@ -39,20 +39,21 @@ class HttpClientInstrumentation {
 
   @Around("encoderPointcut() && args(ctx, httpRequest, out)")
   def onEncodeRequest(pjp: ProceedingJoinPoint, ctx: ChannelHandlerContext, httpRequest: HttpRequest, out: util.List[AnyRef]): AnyRef = {
-    val currentContext = Kamon.currentContext()
-    val currentSpan = currentContext.get(Span.ContextKey)
+    val currentContext = ctx.channel().asInstanceOf[ChannelContextAware]
+    val currentSpan = currentContext.context.get(Span.ContextKey)
 
-    if (currentSpan.isEmpty()) {
-      pjp.proceed()
-    } else {
+    if (currentSpan.isEmpty()) pjp.proceed()
+    else {
       val operationName = Netty.generateHttpClientOperationName(httpRequest)
-      val clientRequestSpan = Kamon.buildSpan(operationName).asChildOf(currentSpan).start()
-      clientRequestSpan.addSpanTag("span.kind", "client")
+      val clientRequestSpan = Kamon.buildSpan(operationName)
+        .asChildOf(currentSpan)
+        .withSpanTag("span.kind", "client")
+        .start()
 
-      val textMap = contextCodec().HttpHeaders.encode(currentContext)
+      val textMap = contextCodec().HttpHeaders.encode(currentContext.context)
       textMap.values.foreach { case (key, value) => httpRequest.headers().add(key, value) }
 
-      ctx.channel().asInstanceOf[ChannelContextAware].span = clientRequestSpan
+      currentContext.setContext(currentContext.context.withKey(Span.ContextKey,clientRequestSpan))
 
       pjp.proceed(Array(ctx, httpRequest, out))
     }
@@ -61,15 +62,14 @@ class HttpClientInstrumentation {
   @After("decoderPointcut() && args(ctx, *, out)")
   def onDecodeRequest(ctx: ChannelHandlerContext, out: java.util.List[Object]): Unit = {
     if (out.size() > 0 && out.get(0).isInstanceOf[HttpResponse]) {
-      val span = ctx.channel().asInstanceOf[ChannelContextAware].span
+      val span = ctx.channel().asInstanceOf[ChannelContextAware].context.get(Span.ContextKey)
       span.finish()
     }
   }
 
   @AfterThrowing(pointcut = "decoderPointcut() && args(ctx, *, *)", throwing = "ex")
   def onDecodeError(ctx: ChannelHandlerContext, ex:Exception): Unit = {
-    val span = ctx.channel().asInstanceOf[ChannelContextAware].span
-    println(ex)
+    val span = ctx.channel().asInstanceOf[ChannelContextAware].context.get(Span.ContextKey)
     span.addSpanTag("error", "true").finish()
   }
 
