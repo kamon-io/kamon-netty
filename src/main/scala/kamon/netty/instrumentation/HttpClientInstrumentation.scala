@@ -38,8 +38,8 @@ class HttpClientInstrumentation {
 
   @Around("encoderPointcut() && args(ctx, httpRequest, out)")
   def onEncodeRequest(pjp: ProceedingJoinPoint, ctx: ChannelHandlerContext, httpRequest: HttpRequest, out: util.List[AnyRef]): AnyRef = {
-    val currentContext = ctx.channel().asInstanceOf[ChannelContextAware]
-    val currentSpan = currentContext.context.get(Span.ContextKey)
+    val channel = ctx.channel().toContextAware()
+    val currentSpan = channel.context.get(Span.ContextKey)
 
     if (currentSpan.isEmpty()) pjp.proceed()
     else {
@@ -49,37 +49,27 @@ class HttpClientInstrumentation {
         .withSpanTag("span.kind", "client")
         .start()
 
-      val textMap = Kamon.contextCodec.HttpHeaders.encode(currentContext.context)
+      val textMap = Kamon.contextCodec.HttpHeaders.encode(channel.context)
       textMap.values.foreach { case (key, value) => httpRequest.headers().add(key, value) }
 
-      currentContext.setContext(currentContext.context.withKey(Span.ContextKey, clientRequestSpan))
+      channel.setContext(channel.context.withKey(Span.ContextKey, clientRequestSpan))
 
       pjp.proceed(Array(ctx, httpRequest, out))
     }
   }
 
   @After("decoderPointcut() && args(ctx, *, out)")
-  def onDecodeRequest(ctx: ChannelHandlerContext, out: java.util.List[Object]): Unit = {
+  def onDecodeResponse(ctx: ChannelHandlerContext, out: java.util.List[Object]): Unit = {
     if (out.size() > 0 && out.get(0).isInstanceOf[HttpResponse]) {
-      val span = ctx.channel().asInstanceOf[ChannelContextAware].context.get(Span.ContextKey)
+      val span = ctx.channel().toContextAware().context.get(Span.ContextKey)
       span.finish()
     }
   }
 
   @AfterThrowing("decoderPointcut() && args(ctx, *, *)")
   def onDecodeError(ctx: ChannelHandlerContext): Unit = {
-    val span = ctx.channel().asInstanceOf[ChannelContextAware].context.get(Span.ContextKey)
+    val span = ctx.channel().toContextAware().context.get(Span.ContextKey)
     span.addSpanTag("error", "true").finish()
   }
 
-  def writeOnlyTextMapFromMap(map: scala.collection.mutable.Map[String, String]): TextMap = new TextMap {
-    override def put(key: String, value: String): Unit =
-      map.put(key, value)
-
-    override def get(key: String): Option[String] =
-      map.get(key)
-
-    override def values: Iterator[(String, String)] =
-      map.toIterator
-  }
 }

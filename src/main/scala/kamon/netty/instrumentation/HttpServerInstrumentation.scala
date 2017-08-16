@@ -20,7 +20,6 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
 import kamon.Kamon
 import kamon.netty.Netty
-import kamon.netty.util.HttpUtils
 import kamon.trace.Span
 import kamon.util.Clock
 import org.aspectj.lang.annotation.{After, Aspect, Before}
@@ -36,23 +35,22 @@ class HttpServerInstrumentation {
   def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[Object]): Unit = {
     if (out.size() > 0 && out.get(0).isInstanceOf[HttpRequest]) {
       val request = out.get(0).asInstanceOf[HttpRequest]
-      val currentContext = ctx.channel().asInstanceOf[ChannelContextAware]
-      val incomingSpan = Kamon.contextCodec.HttpHeaders.decode(HttpUtils.textMapForHttpRequest(request)).get(Span.ContextKey)
+      val channel = ctx.channel().toContextAware()
+      val incomingSpan = Kamon.contextCodec.HttpHeaders.decode(textMapForHttpRequest(request)).get(Span.ContextKey)
 
       val span = Kamon.buildSpan(Netty.generateOperationName(request))
         .asChildOf(incomingSpan)
         .withSpanTag("span.kind", "server")
-        .withStartTimestamp(currentContext.startTime)
+        .withStartTimestamp(channel.startTime)
         .start()
 
-      currentContext.setContext(currentContext.context.withKey(Span.ContextKey, span))
+      channel.setContext(channel.context.withKey(Span.ContextKey, span))
     }
   }
 
   @Before("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, response, *)")
   def onEncodeResponse(ctx: ChannelHandlerContext, response:HttpResponse): Unit = {
-    val span = ctx.channel().asInstanceOf[ChannelContextAware].context.get(Span.ContextKey)
-
+    val span = ctx.channel().toContextAware().context.get(Span.ContextKey)
     if(isError(response.getStatus.code())) {
       span.addSpanTag("error", "true")
     }

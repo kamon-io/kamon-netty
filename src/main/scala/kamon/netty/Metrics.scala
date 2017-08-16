@@ -27,7 +27,7 @@ object Metrics {
     * Metrics for Netty Event Loops:
     *
     *    - registered-channels:The number of registered Channels.
-    *    - task-processing-time: The the number of nanoseconds the last processing of all tasks took..
+    *    - task-processing-time: The the number of nanoseconds the last processing of all tasks took.
     *    - task-queue-size: The number of tasks that are pending for processing.
     *    - task-waiting-time: The waiting time in the queue.
     */
