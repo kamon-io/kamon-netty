@@ -51,7 +51,7 @@ object ServerBootstrapInstrumentation {
 
   @ChannelHandler.Sharable
   private class KamonHandler extends ChannelInboundHandlerAdapter {
-    override def channelRead(ctx: ChannelHandlerContext, msg: scala.Any): Unit = {
+    override def channelRead(ctx: ChannelHandlerContext, msg: AnyRef): Unit = {
       ctx.channel().toContextAware().startTime = Clock.microTimestamp()
       super.channelRead(ctx, msg)
     }
