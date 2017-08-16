@@ -16,6 +16,8 @@
 
 package kamon.netty
 
+import java.net.URI
+
 import com.typesafe.config.Config
 import io.netty.handler.codec.http.HttpRequest
 import kamon.Kamon
@@ -48,9 +50,24 @@ trait NameGenerator {
 
 class DefaultNameGenerator extends NameGenerator {
 
-  override def generateHttpClientOperationName(request: HttpRequest): String =
-    request.getUri
+  import java.util.Locale
+  import scala.collection.concurrent.TrieMap
 
-  override def generateOperationName(request: HttpRequest): String =
-    request.getUri
+  private val localCache = TrieMap.empty[String, String]
+  private val normalizePattern = """\$([^<]+)<[^>]+>""".r
+
+  override def generateHttpClientOperationName(request: HttpRequest): String = request.getUri
+
+  override def generateOperationName(request: HttpRequest): String = {
+    localCache.getOrElseUpdate(s"${request.getMethod.name()}${request.getUri}", {
+      // Convert paths of form GET /foo/bar/$paramname<regexp>/blah to foo.bar.paramname.blah.get
+      val uri = new URI(request.getUri)
+      val p = normalizePattern.replaceAllIn(uri.getPath, "$1").replace('/', '.').dropWhile(_ == '.')
+      val normalisedPath = {
+        if (p.lastOption.exists(_ != '.')) s"$p."
+        else p
+      }
+      s"$normalisedPath${request.getMethod.name().toLowerCase(Locale.ENGLISH)}"
+    })
+  }
 }

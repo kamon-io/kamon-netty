@@ -44,7 +44,7 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
               val serverFinishedSpan = reporter.nextSpan().value
               val clientFinishedSpan = reporter.nextSpan().value
 
-              serverFinishedSpan.operationName shouldBe s"http://localhost:$port/route?param=123"
+              serverFinishedSpan.operationName shouldBe "route.get"
               serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
 
               clientFinishedSpan.operationName shouldBe s"http://localhost:$port/route?param=123"
@@ -67,7 +67,7 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
               val serverFinishedSpan = reporter.nextSpan().value
               val clientFinishedSpan = reporter.nextSpan().value
 
-              serverFinishedSpan.operationName shouldBe s"http://localhost:$port/error"
+              serverFinishedSpan.operationName shouldBe "error.get"
               serverFinishedSpan.tags should contain allOf("span.kind" -> TagValue.String("server"), "error" -> TagValue.True)
 
               clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
@@ -90,7 +90,7 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
               val serverFinishedSpan = reporter.nextSpan().value
               val clientFinishedSpan = reporter.nextSpan().value
 
-              serverFinishedSpan.operationName shouldBe s"http://localhost:$port/fetch-in-chunks"
+              serverFinishedSpan.operationName shouldBe "fetch-in-chunks.post"
               serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
 
               clientFinishedSpan.operationName shouldBe s"http://localhost:$port/fetch-in-chunks"
@@ -118,7 +118,7 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
               val serverFinishedSpan = reporter.nextSpan().value
               val clientFinishedSpan = reporter.nextSpan().value
 
-              serverFinishedSpan.operationName shouldBe s"http://localhost:$port/fetch-in-chunks"
+              serverFinishedSpan.operationName shouldBe "fetch-in-chunks.post"
               serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
 
               clientFinishedSpan.operationName shouldBe s"http://localhost:$port/fetch-in-chunks"
@@ -143,7 +143,7 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
           eventually(timeout(2 seconds)) {
             val serverFinishedSpan = reporter.nextSpan().value
 
-            serverFinishedSpan.operationName shouldBe s"http://localhost:$port/route?param=123"
+            serverFinishedSpan.operationName shouldBe "route.get"
             serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
 
             serverFinishedSpan.context.parentID.string shouldBe ""
