@@ -28,10 +28,10 @@ import org.scalatest._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.SpanSugar._
 
-class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspection with Eventually
+class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection with Eventually
   with Reconfigure with BeforeAndAfterAll with OptionValues {
 
-  "The Netty Server request span propagation" should {
+  "The Netty HTTP span propagation" should {
     "propagate the span from the client to the server" in {
       withNioServer() { port =>
         withNioClient(port) { httpClient =>
@@ -55,7 +55,7 @@ class NettyServerTracingSpec extends WordSpec with Matchers with MetricInspectio
       }
     }
 
-    "contain a span error when a internal server error(500) occurs" in {
+    "contain a span error when an internal server error(500) occurs" in {
       withNioServer() { port =>
         withNioClient(port) { httpClient =>
           val clientSpan =  Kamon.buildSpan("test-span-with-error").start()
