@@ -44,9 +44,10 @@ package object instrumentation {
   def isError(statusCode: Int): Boolean =
     statusCode >= 500 && statusCode < 600
 
-  def encodeTextMapToRequest(ctx:Context, request:HttpRequest):Unit = {
+  def encodeContext(ctx:Context, request:HttpRequest): HttpRequest = {
     val textMap = Kamon.contextCodec().HttpHeaders.encode(ctx)
     textMap.values.foreach { case (key, value) => request.headers().add(key, value) }
+    request
   }
 
   def decodeContext(request: HttpRequest): Context = {

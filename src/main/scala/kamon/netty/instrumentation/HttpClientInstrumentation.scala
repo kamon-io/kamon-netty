@@ -38,13 +38,12 @@ class HttpClientInstrumentation {
   @Around("encoderPointcut() && args(ctx, request, out)")
   def onEncodeRequest(pjp: ProceedingJoinPoint, ctx: ChannelHandlerContext, request: HttpRequest, out: util.List[AnyRef]): AnyRef = {
     val channel = ctx.channel().toContextAware()
-    val incomingContext = channel.context
-    val clientSpan = incomingContext.get(Span.ContextKey)
+    val currentContext = channel.context
+    val clientSpan = currentContext.get(Span.ContextKey)
 
     if (clientSpan.isEmpty()) pjp.proceed()
     else {
-      val operationName = Netty.generateHttpClientOperationName(request)
-      val clientRequestSpan = Kamon.buildSpan(operationName)
+      val clientRequestSpan = Kamon.buildSpan(Netty.generateHttpClientOperationName(request))
         .asChildOf(clientSpan)
         .withSpanTag("span.kind", "client")
         .withSpanTag("component", "netty")
@@ -52,11 +51,9 @@ class HttpClientInstrumentation {
         .withSpanTag("http.url", request.getUri)
         .start()
 
-      encodeTextMapToRequest(incomingContext, request)
-      
-      channel.setContext(incomingContext.withKey(Span.ContextKey, clientRequestSpan))
+      channel.setContext(currentContext.withKey(Span.ContextKey, clientRequestSpan))
 
-      pjp.proceed(Array(ctx, request, out))
+      pjp.proceed(Array(ctx, encodeContext(currentContext, request), out))
     }
   }
 
