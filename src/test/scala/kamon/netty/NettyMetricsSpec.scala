@@ -65,7 +65,7 @@ class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
 
           val metrics = Metrics.forEventLoop("boss-group-nio-event-loop")
 
-          metrics.registeredChannels.value() should be > 0L
+          metrics.registeredChannels.distribution().max should be > 0L
           metrics.taskProcessingTime.distribution().max should be > 0L
           metrics.taskQueueSize.distribution().max should be > 0L
           metrics.taskWaitingTime.distribution().max should be > 0L
@@ -84,7 +84,7 @@ class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
 
           val metrics = Metrics.forEventLoop("boss-group-epoll-event-loop")
 
-          metrics.registeredChannels.value() should be >= 0L
+          metrics.registeredChannels.distribution().max should be >= 0L
           metrics.taskProcessingTime.distribution().max should be > 0L
           metrics.taskQueueSize.distribution().max should be >= 0L
           metrics.taskWaitingTime.distribution().max should be > 0L

@@ -41,6 +41,11 @@ package object instrumentation {
       obj.isInstanceOf[HttpResponse]
   }
 
+  implicit class AbstractChannelSyntax(val channel: AnyRef) extends AnyVal {
+    def isOpen():Boolean =
+      channel.getClass.getMethod("isOpen").invoke(channel).asInstanceOf[Boolean]
+  }
+
   def isError(statusCode: Int): Boolean =
     statusCode >= 500 && statusCode < 600
 

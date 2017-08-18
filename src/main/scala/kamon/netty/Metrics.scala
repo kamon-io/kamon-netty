@@ -17,8 +17,8 @@
 package kamon.netty
 
 import kamon.Kamon
-import kamon.metric._
 import kamon.metric.MeasurementUnit._
+import kamon.metric._
 
 
 object Metrics {
@@ -31,7 +31,7 @@ object Metrics {
     *    - task-queue-size: The number of tasks that are pending for processing.
     *    - task-waiting-time: The waiting time in the queue.
     */
-  val registeredChannelsMetric = Kamon.gauge("netty.event-loop.registered-channels")
+  val registeredChannelsMetric = Kamon.minMaxCounter("netty.event-loop.registered-channels")
   val taskProcessingTimeMetric = Kamon.histogram("netty.event-loop.task-processing-time", time.nanoseconds)
   val taskQueueSizeMetric = Kamon.minMaxCounter("netty.event-loop.task-queue-size")
   val taskWaitingTimeMetric = Kamon.histogram("netty.event-loop.task-waiting-time")
@@ -49,7 +49,7 @@ object Metrics {
   }
 
   case class EventLoopMetrics(tags: Map[String, String],
-                              registeredChannels: Gauge,
+                              registeredChannels: MinMaxCounter,
                               taskProcessingTime: Histogram,
                               taskQueueSize: MinMaxCounter,
                               taskWaitingTime: Histogram) {

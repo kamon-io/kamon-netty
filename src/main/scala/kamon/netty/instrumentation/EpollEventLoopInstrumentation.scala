@@ -33,9 +33,11 @@ class EpollEventLoopInstrumentation {
   def onAdd(eventLoop: EventExecutor): Unit =
     Metrics.forEventLoop(name(eventLoop)).registeredChannels.increment()
 
-  @After("execution(* io.netty.channel.epoll.EpollEventLoop.remove(..)) && this(eventLoop)")
-  def onRemove(eventLoop: EventExecutor): Unit =
-    Metrics.forEventLoop(name(eventLoop)).registeredChannels.decrement()
+  @After("execution(* io.netty.channel.epoll.EpollEventLoop.remove(..)) && args(channel) && this(eventLoop)")
+  def onRemove(eventLoop: EventExecutor, channel:AnyRef): Unit = {
+    if(channel.isOpen())
+      Metrics.forEventLoop(name(eventLoop)).registeredChannels.decrement()
+  }
 
   @Around("execution(* io.netty.channel.epoll.EpollEventLoop.newTaskQueue(..)) && this(eventLoop)")
   def onNewTaskQueue(pjp: ProceedingJoinPoint, eventLoop: EventLoop): Any = {
