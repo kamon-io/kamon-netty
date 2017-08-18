@@ -34,7 +34,7 @@ object Metrics {
   val registeredChannelsMetric = Kamon.minMaxCounter("netty.event-loop.registered-channels")
   val taskProcessingTimeMetric = Kamon.histogram("netty.event-loop.task-processing-time", time.nanoseconds)
   val taskQueueSizeMetric = Kamon.minMaxCounter("netty.event-loop.task-queue-size")
-  val taskWaitingTimeMetric = Kamon.histogram("netty.event-loop.task-waiting-time")
+  val taskWaitingTimeMetric = Kamon.histogram("netty.event-loop.task-waiting-time", time.nanoseconds)
 
 
   def forEventLoop(name: String): EventLoopMetrics = {
