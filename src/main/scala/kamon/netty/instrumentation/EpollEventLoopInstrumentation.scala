@@ -18,7 +18,7 @@ package kamon.netty.instrumentation
 
 import java.util
 
-import io.netty.channel.EventLoop
+import io.netty.channel.{Channel, EventLoop}
 import io.netty.util.concurrent.EventExecutor
 import kamon.netty.Metrics
 import kamon.netty.util.MonitoredQueue
@@ -34,8 +34,8 @@ class EpollEventLoopInstrumentation {
     Metrics.forEventLoop(name(eventLoop)).registeredChannels.increment()
 
   @After("execution(* io.netty.channel.epoll.EpollEventLoop.remove(..)) && args(channel) && this(eventLoop)")
-  def onRemove(eventLoop: EventExecutor, channel:AnyRef): Unit = {
-    if(channel.isOpen())
+  def onRemove(eventLoop: EventExecutor, channel:Channel): Unit = {
+    if(channel.isOpen)
       Metrics.forEventLoop(name(eventLoop)).registeredChannels.decrement()
   }
 
