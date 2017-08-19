@@ -13,8 +13,8 @@
  * =========================================================================================
  */
 
-val kamonCore       = "io.kamon"        %% "kamon-core"                     % "1.0.0-RC1-61029e115272b9af3f4460b311d3a2e650c806e3"
-val kamonTestkit    = "io.kamon"        %% "kamon-testkit"                  % "1.0.0-RC1-61029e115272b9af3f4460b311d3a2e650c806e3"
+val kamonCore       = "io.kamon"        %% "kamon-core"                     % "1.0.0-RC1-5e0b768f139fc2c5e75d6b5060bd4d0aa48092b0"
+val kamonTestkit    = "io.kamon"        %% "kamon-testkit"                  % "1.0.0-RC1-5e0b768f139fc2c5e75d6b5060bd4d0aa48092b0"
 
 val scalaExtension  = "io.kamon"        %% "agent-scala-extension"          % "0.0.3-experimental"
 
