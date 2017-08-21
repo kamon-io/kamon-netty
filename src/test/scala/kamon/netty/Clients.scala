@@ -20,7 +20,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
 import io.netty.bootstrap.Bootstrap
-import io.netty.buffer.{ByteBuf, Unpooled}
+import io.netty.buffer.Unpooled
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
@@ -61,13 +61,13 @@ class NioEventLoopBasedClient(port: Int) {
 
   def get(path: String): DefaultFullHttpRequest = {
     val request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, path)
-    HttpHeaders.setContentLength(request, 0)
+    HttpUtil.setContentLength(request, 0)
     request
   }
 
   def postWithChunks(path: String, chunks: String*): (DefaultHttpRequest, Seq[DefaultHttpContent]) = {
     val request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, path)
-    HttpHeaders.setTransferEncodingChunked(request)
+    HttpUtil.setTransferEncodingChunked(request, true)
     val httpChunks = chunks.map(chunk => new DefaultHttpContent(Unpooled.copiedBuffer(chunk, CharsetUtil.UTF_8)))
     (request, httpChunks :+ new DefaultLastHttpContent(Unpooled.EMPTY_BUFFER))
   }
