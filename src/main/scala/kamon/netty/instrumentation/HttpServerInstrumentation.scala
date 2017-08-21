@@ -38,8 +38,8 @@ class HttpServerInstrumentation {
         .withStartTimestamp(channel.startTime)
         .withSpanTag("span.kind", "server")
         .withSpanTag("component", "netty")
-        .withSpanTag("http.method", request.method().name())
-        .withSpanTag("http.url", request.uri())
+        .withSpanTag("http.method", request.getMethod.name())
+        .withSpanTag("http.url", request.getUri)
         .start()
 
       channel.setContext(incomingContext.withKey(Span.ContextKey, serverSpan))
@@ -49,7 +49,7 @@ class HttpServerInstrumentation {
   @Before("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, response, *)")
   def onEncodeResponse(ctx: ChannelHandlerContext, response:HttpResponse): Unit = {
     val serverSpan = ctx.channel().toContextAware().context.get(Span.ContextKey)
-    if(isError(response.status().code()))
+    if(isError(response.getStatus.code()))
       serverSpan.addSpanTag("error", value = true)
     serverSpan.finish()
   }

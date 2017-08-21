@@ -47,8 +47,8 @@ class HttpClientInstrumentation {
         .asChildOf(clientSpan)
         .withSpanTag("span.kind", "client")
         .withSpanTag("component", "netty")
-        .withSpanTag("http.method", request.method().name())
-        .withSpanTag("http.url", request.uri())
+        .withSpanTag("http.method", request.getMethod.name())
+        .withSpanTag("http.url", request.getUri)
         .start()
 
       channel.setContext(currentContext.withKey(Span.ContextKey, clientRequestSpan))

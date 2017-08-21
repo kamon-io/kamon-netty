@@ -59,7 +59,7 @@ class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
         withNioClient(port) { httpClient =>
           val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
           val response = httpClient.execute(httpGet)
-          response.status().code() should be(200)
+          response.getStatus.code() should be(200)
 
           registeredChannelsMetric.valuesForTag("name") should contain("boss-group-nio-event-loop")
 
@@ -78,7 +78,7 @@ class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
         withNioClient(port) { httpClient =>
           val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
           val response = httpClient.execute(httpGet)
-          response.status().code() should be(200)
+          response.getStatus.code() should be(200)
 
           registeredChannelsMetric.valuesForTag("name") should contain("boss-group-epoll-event-loop")
 

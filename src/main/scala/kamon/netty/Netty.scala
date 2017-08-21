@@ -58,20 +58,20 @@ class DefaultNameGenerator extends NameGenerator {
   private val normalizePattern = """\$([^<]+)<[^>]+>""".r
 
   override def generateHttpClientOperationName(request: HttpRequest): String = {
-    val uri = new URI(request.uri())
+    val uri = new URI(request.getUri)
     s"${uri.getAuthority}${uri.getPath}"
   }
 
   override def generateOperationName(request: HttpRequest): String = {
-    localCache.getOrElseUpdate(s"${request.method().name()}${request.uri()}", {
+    localCache.getOrElseUpdate(s"${request.getMethod.name()}${request.getUri}", {
       // Convert paths of form GET /foo/bar/$paramname<regexp>/blah to foo.bar.paramname.blah.get
-      val uri = new URI(request.uri())
+      val uri = new URI(request.getUri())
       val p = normalizePattern.replaceAllIn(uri.getPath, "$1").replace('/', '.').dropWhile(_ == '.')
       val normalisedPath = {
         if (p.lastOption.exists(_ != '.')) s"$p."
         else p
       }
-      s"$normalisedPath${request.method().name().toLowerCase(Locale.ENGLISH)}"
+      s"$normalisedPath${request.getMethod.name().toLowerCase(Locale.ENGLISH)}"
     })
   }
 }
