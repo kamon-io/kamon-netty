@@ -41,3 +41,7 @@ The metrics that you will get for an __EventLoop__ are:
 * __task-waiting-time__: A histogram that tracks the waiting time in the queue.
 
 ![Image of Netty Metrics](/img/netty-metrics.png)
+
+### Traces ###
+
+![Image of Netty Metrics](/img/netty-jaeger.png)
