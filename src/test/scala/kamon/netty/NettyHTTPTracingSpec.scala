@@ -47,7 +47,7 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
               serverFinishedSpan.operationName shouldBe "route.get"
               serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
 
-              clientFinishedSpan.operationName shouldBe s"http://localhost:$port/route?param=123"
+              clientFinishedSpan.operationName shouldBe s"localhost:$port/route"
               clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
             }
           }
@@ -71,7 +71,7 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
               serverFinishedSpan.tags should contain allOf("span.kind" -> TagValue.String("server"), "error" -> TagValue.True)
 
               clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
-              clientFinishedSpan.operationName shouldBe s"http://localhost:$port/error"
+              clientFinishedSpan.operationName shouldBe s"localhost:$port/error"
             }
           }
         }
@@ -93,7 +93,7 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
               serverFinishedSpan.operationName shouldBe "fetch-in-chunks.post"
               serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
 
-              clientFinishedSpan.operationName shouldBe s"http://localhost:$port/fetch-in-chunks"
+              clientFinishedSpan.operationName shouldBe s"localhost:$port/fetch-in-chunks"
               clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
 
               serverFinishedSpan.context.parentID.string shouldBe clientSpan.context.spanID.string
@@ -121,7 +121,7 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
               serverFinishedSpan.operationName shouldBe "fetch-in-chunks.post"
               serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
 
-              clientFinishedSpan.operationName shouldBe s"http://localhost:$port/fetch-in-chunks"
+              clientFinishedSpan.operationName shouldBe s"localhost:$port/fetch-in-chunks"
               clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
 
               serverFinishedSpan.context.parentID.string shouldBe clientSpan.context.spanID.string
