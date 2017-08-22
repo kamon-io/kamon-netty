@@ -164,7 +164,7 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
             httpClient.execute(httpClient.get(s"http://localhost:$port/route?param=123"))
             httpClient.execute(httpClient.get(s"http://localhost:$port/route?param=123"))
 
-            eventually(timeout(2 seconds)) {
+            eventually(timeout(5 seconds)) {
               val serverFinishedSpan = reporter.nextSpan().value
               val clientFinishedSpan1 = reporter.nextSpan().value
               val clientFinishedSpan2 = reporter.nextSpan().value
@@ -174,11 +174,11 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
 
               clientFinishedSpan1.operationName shouldBe s"localhost:$port/route"
               clientFinishedSpan1.tags should contain ("span.kind" -> TagValue.String("client"))
-              clientFinishedSpan1.context.parentID shouldBe ""
 
               clientFinishedSpan2.operationName shouldBe s"localhost:$port/route"
               clientFinishedSpan2.tags should contain ("span.kind" -> TagValue.String("client"))
-              clientFinishedSpan2.context.parentID shouldBe ""
+
+              clientFinishedSpan1.context.parentID.string shouldBe clientFinishedSpan2.context.parentID.string
 
               reporter.nextSpan() shouldBe empty
             }
