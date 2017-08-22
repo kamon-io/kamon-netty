@@ -42,7 +42,7 @@ class ChannelInstrumentation {
   @DeclareMixin("io.netty.handler.codec.http.HttpMessage+")
   def mixinRequestToContextAware: RequestContextAware =  new RequestContextAware{}
 
-  @After("(io.netty.handler.codec.http.HttpMessage+).new(..) && this(request)")
+  @After("execution(io.netty.handler.codec.http.HttpMessage+.new(..)) && this(request)")
   def afterCreation(request: RequestContextAware): Unit = {
     // Force traceContext initialization.
     request.context
