@@ -161,19 +161,24 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
         withNioClient(port) { httpClient =>
           val clientSpan =  Kamon.buildSpan("test-span").start()
           Kamon.withContext(Context.create(Span.ContextKey, clientSpan)) {
-            val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
-            httpClient.execute(httpGet)
-            httpClient.execute(httpGet)
+            httpClient.execute(httpClient.get(s"http://localhost:$port/route?param=123"))
+            httpClient.execute(httpClient.get(s"http://localhost:$port/route?param=123"))
 
-            eventually(timeout(200 seconds)) {
+            eventually(timeout(2 seconds)) {
               val serverFinishedSpan = reporter.nextSpan().value
-              val clientFinishedSpan = reporter.nextSpan().value
+              val clientFinishedSpan1 = reporter.nextSpan().value
+              val clientFinishedSpan2 = reporter.nextSpan().value
 
               serverFinishedSpan.operationName shouldBe "route.get"
               serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
 
-              clientFinishedSpan.operationName shouldBe s"localhost:$port/route"
-              clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
+              clientFinishedSpan1.operationName shouldBe s"localhost:$port/route"
+              clientFinishedSpan1.tags should contain ("span.kind" -> TagValue.String("client"))
+              clientFinishedSpan1.context.parentID shouldBe ""
+
+              clientFinishedSpan2.operationName shouldBe s"localhost:$port/route"
+              clientFinishedSpan2.tags should contain ("span.kind" -> TagValue.String("client"))
+              clientFinishedSpan2.context.parentID shouldBe ""
 
               reporter.nextSpan() shouldBe empty
             }
