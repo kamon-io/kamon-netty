@@ -6,6 +6,13 @@
 
 ### Getting Started
 
+The `kamon-netty` module ships with bytecode instrumentation that brings automatic traces and metrics to your 
+Netty based applications and libraries.
+
+
+The <b>kamon-netty</b> module requires you to start your application using the AspectJ Weaver Agent. Kamon will warn you
+at startup if you failed to do so.
+
 Kamon Netty is currently available for Scala 2.11 and 2.12.
 
 Supported releases and dependencies are shown below.
@@ -45,3 +52,6 @@ The metrics that you will get for an __EventLoop__ are:
 ### Traces ###
 
 ![Image of Netty Metrics](/img/netty-jaeger.png)
+
+
+

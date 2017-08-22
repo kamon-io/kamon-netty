@@ -80,7 +80,8 @@ object Servers {
 private class HttpServerInitializer extends ChannelInitializer[SocketChannel] {
   override def initChannel(ch: SocketChannel): Unit = {
     val p = ch.pipeline
-    p.addLast(new HttpServerCodec)
+    p.addLast(new HttpRequestDecoder(4096, 8192, 8192))
+    p.addLast(new HttpResponseEncoder())
     p.addLast(new ChunkedWriteHandler)
     p.addLast(new HttpServerHandler)
   }

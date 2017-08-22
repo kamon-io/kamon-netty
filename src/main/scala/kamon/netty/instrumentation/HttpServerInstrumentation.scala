@@ -26,13 +26,12 @@ import org.aspectj.lang.annotation.{After, Aspect, Before}
 @Aspect
 class HttpServerInstrumentation {
 
-  @After("execution(* io.netty.handler.codec.http.HttpServerCodec.HttpServerRequestDecoder.decode(..)) && args(ctx, *, out)")
+  @After("execution(* io.netty.handler.codec.http.HttpObjectDecoder+.decode(..)) && args(ctx, *, out)")
   def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[AnyRef]): Unit = {
     if (out.size() > 0 && out.get(0).isHttpRequest()) {
       val request = out.get(0).toHttpRequest()
       val channel = ctx.channel().toContextAware()
       val incomingContext = decodeContext(request)
-
       val serverSpan = Kamon.buildSpan(Netty.generateOperationName(request))
         .asChildOf(incomingContext.get(Span.ContextKey))
         .withStartTimestamp(channel.startTime)
