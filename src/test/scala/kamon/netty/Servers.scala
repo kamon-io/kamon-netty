@@ -95,29 +95,34 @@ private class HttpServerHandler extends ChannelInboundHandlerAdapter {
     if (msg.isInstanceOf[HttpRequest]) {
       val request = msg.asInstanceOf[HttpRequest]
 
+      val isKeepAlive = HttpHeaders.isKeepAlive(request)
+
       if (request.getUri.contains("/error")) {
         val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR, Unpooled.wrappedBuffer(ContentError))
         response.headers.set("Content-Type", "text/plain")
         response.headers.set("Content-Length", response.content.readableBytes)
-        ctx.write(response).addListener(ChannelFutureListener.CLOSE)
+        val channelFuture = ctx.write(response)
+        addCloseListener(isKeepAlive)(channelFuture)
       } else if (request.getUri.contains("/fetch-in-chunks")) {
         val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
         HttpHeaders.setTransferEncodingChunked(response)
         response.headers.set("Content-Type", "text/plain")
+
 
         ctx.write(response)
           .addListener((cf: ChannelFuture) =>
             writeChunk(cf.channel()).addListener((cf: ChannelFuture) =>
               writeChunk(cf.channel()).addListener((cf: ChannelFuture) =>
                 writeChunk(cf.channel()).addListener((cf: ChannelFuture) =>
-                  writeLastContent(cf.channel()).addListener(
-                    ChannelFutureListener.CLOSE)))))
+                  (writeLastContent _).andThen(addCloseListener(isKeepAlive))(cf.channel()) ))))
       } else {
         val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(ContentOk))
         response.headers.set("Content-Type", "text/plain")
         response.headers.set("Content-Length", response.content.readableBytes)
-        ctx.write(response).addListener(ChannelFutureListener.CLOSE)
+        val channelFuture = ctx.write(response)
+        addCloseListener(isKeepAlive)(channelFuture)
       }
+
     }
   }
 
@@ -133,5 +138,9 @@ private class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
   private def writeLastContent(channel: Channel): ChannelFuture = {
     channel.writeAndFlush(new DefaultLastHttpContent(Unpooled.EMPTY_BUFFER))
+  }
+
+  private def addCloseListener(isKeepAlive: Boolean)(f: ChannelFuture): Unit = {
+    if (!isKeepAlive) f.addListener(ChannelFutureListener.CLOSE)
   }
 }

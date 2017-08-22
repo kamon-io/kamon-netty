@@ -49,6 +49,8 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
 
               clientFinishedSpan.operationName shouldBe s"localhost:$port/route"
               clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
+
+              reporter.nextSpan() shouldBe empty
             }
           }
         }
@@ -149,6 +151,32 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
             serverFinishedSpan.context.parentID.string shouldBe ""
 
             reporter.nextSpan() shouldBe empty
+          }
+        }
+      }
+    }
+
+    "create a new span for each request" in {
+      withNioServer() { port =>
+        withNioClient(port) { httpClient =>
+          val clientSpan =  Kamon.buildSpan("test-span").start()
+          Kamon.withContext(Context.create(Span.ContextKey, clientSpan)) {
+            val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
+            httpClient.execute(httpGet)
+            httpClient.execute(httpGet)
+
+            eventually(timeout(200 seconds)) {
+              val serverFinishedSpan = reporter.nextSpan().value
+              val clientFinishedSpan = reporter.nextSpan().value
+
+              serverFinishedSpan.operationName shouldBe "route.get"
+              serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
+
+              clientFinishedSpan.operationName shouldBe s"localhost:$port/route"
+              clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
+
+              reporter.nextSpan() shouldBe empty
+            }
           }
         }
       }
