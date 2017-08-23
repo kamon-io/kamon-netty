@@ -29,8 +29,23 @@ trait ChannelContextAware {
 }
 
 
+trait RequestContextAware {
+  @volatile @BeanProperty var context:Context = Kamon.currentContext()
+}
+
+
 @Aspect
 class ChannelInstrumentation {
   @DeclareMixin("io.netty.channel.Channel+")
   def mixinChannelToContextAware: ChannelContextAware =  new ChannelContextAware{}
+
+  @DeclareMixin("io.netty.handler.codec.http.HttpMessage+")
+  def mixinRequestToContextAware: RequestContextAware =  new RequestContextAware{}
+
+  @After("execution(io.netty.handler.codec.http.HttpMessage+.new(..)) && this(request)")
+  def afterCreation(request: RequestContextAware): Unit = {
+    // Force traceContext initialization.
+    request.context
+  }
+
 }
