@@ -16,8 +16,6 @@
 
 package kamon.netty
 
-import java.net.SocketAddress
-
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.buffer.{ByteBuf, Unpooled}
 import io.netty.channel.epoll.{EpollEventLoopGroup, EpollServerSocketChannel}
@@ -27,8 +25,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.{ChannelFutureListener, _}
 import io.netty.handler.codec.http._
 import io.netty.handler.stream.ChunkedWriteHandler
-import io.netty.util.{AttributeKey, CharsetUtil}
-
+import io.netty.util.CharsetUtil
 
 
 class NioEventLoopBasedServer(port: Int) {
@@ -116,7 +113,7 @@ private class HttpServerHandler extends ChannelInboundHandlerAdapter {
             writeChunk(cf.channel()).addListener((cf: ChannelFuture) =>
               writeChunk(cf.channel()).addListener((cf: ChannelFuture) =>
                 writeChunk(cf.channel()).addListener((cf: ChannelFuture) =>
-                  (writeLastContent _).andThen(addCloseListener(isKeepAlive))(cf.channel()) ))))
+                  (writeLastContent _).andThen(addCloseListener(isKeepAlive))(cf.channel())))))
       } else {
         val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(ContentOk))
         response.headers.set("Content-Type", "text/plain")
@@ -127,92 +124,6 @@ private class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     }
 
-//    class KamonChannelHandlerContext extends ChannelHandlerContext {
-//
-//      val context = _
-//
-//      override def write(msg: scala.Any) = {
-//        msg.withContext(context)
-//      }
-//
-//      override def disconnect() = ???
-//
-//      override def disconnect(promise: ChannelPromise) = ???
-//
-//      override def handler() = ???
-//
-//      override def newProgressivePromise() = ???
-//
-//      override def fireChannelWritabilityChanged() = ???
-//
-//      override def channel() = ???
-//
-//      override def fireExceptionCaught(cause: Throwable) = ???
-//
-//      override def fireChannelActive() = ???
-//
-//      override def writeAndFlush(msg: scala.Any, promise: ChannelPromise) = ???
-//
-//      override def writeAndFlush(msg: scala.Any) = ???
-//
-//      override def isRemoved = ???
-//
-//      override def bind(localAddress: SocketAddress) = ???
-//
-//      override def bind(localAddress: SocketAddress, promise: ChannelPromise) = ???
-//
-//      override def flush() = ???
-//
-//      override def executor() = ???
-//
-//      override def close() = ???
-//
-//      override def close(promise: ChannelPromise) = ???
-//
-//      override def write(msg: scala.Any, promise: ChannelPromise) = ???
-//
-//      override def connect(remoteAddress: SocketAddress) = ???
-//
-//      override def connect(remoteAddress: SocketAddress, localAddress: SocketAddress) = ???
-//
-//      override def connect(remoteAddress: SocketAddress, promise: ChannelPromise) = ???
-//
-//      override def connect(remoteAddress: SocketAddress, localAddress: SocketAddress, promise: ChannelPromise) = ???
-//
-//      override def newPromise() = ???
-//
-//      override def fireChannelInactive() = ???
-//
-//      override def read() = ???
-//
-//      override def fireChannelReadComplete() = ???
-//
-//      override def deregister() = ???
-//
-//      override def deregister(promise: ChannelPromise) = ???
-//
-//      override def newFailedFuture(cause: Throwable) = ???
-//
-//      override def fireChannelRegistered() = ???
-//
-//      override def pipeline() = ???
-//
-//      override def fireChannelRead(msg: scala.Any) = ???
-//
-//      override def newSucceededFuture() = ???
-//
-//      override def voidPromise() = ???
-//
-//      override def name() = ???
-//
-//      override def fireUserEventTriggered(evt: scala.Any) = ???
-//
-//      override def alloc() = ???
-//
-//      override def fireChannelUnregistered() = ???
-//
-//      override def attr[T](key: AttributeKey[T]) = ???
-//    }
   }
 
   override def channelReadComplete(ctx: ChannelHandlerContext): Unit =

@@ -20,9 +20,7 @@ import java.util
 
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.http.HttpRequest
-import io.netty.util.AttributeKey
 import kamon.Kamon
-import kamon.context.Context
 import kamon.netty.Netty
 import kamon.trace._
 import org.aspectj.lang.ProceedingJoinPoint
@@ -30,7 +28,6 @@ import org.aspectj.lang.annotation._
 
 @Aspect
 class HttpClientInstrumentation {
-  val attrKamonContext = AttributeKey.newInstance[Context]("kamon-context")
 
   @Pointcut("execution(* io.netty.handler.codec.http.HttpClientCodec.Decoder.decode(..))")
   def decoderPointcut():Unit = {}
@@ -40,19 +37,10 @@ class HttpClientInstrumentation {
 
   @Around("encoderPointcut() && args(ctx, request, out)")
   def onEncodeRequest(pjp: ProceedingJoinPoint, ctx: ChannelHandlerContext, request: HttpRequest, out: util.List[AnyRef]): AnyRef = {
-//    val channel = ctx.channel().toContextAware()
-//    val  kamonCtx = request.asInstanceOf[RequestContextAware]
-    val currentContext = request.asInstanceOf[RequestContextAware].context //Kamon.currentContext() //channel.context
-
-//    println("requestContext " + kamonCtx.context)
-//    println("currentContexty " + currentContext)
-
+    val currentContext = request.getContext()
     val clientSpan = currentContext.get(Span.ContextKey)
 
-    if (clientSpan.isEmpty()) {
-      ctx.attr(attrKamonContext).set(currentContext)
-      pjp.proceed()
-    }
+    if (clientSpan.isEmpty()) pjp.proceed()
     else {
       val clientRequestSpan = Kamon.buildSpan(Netty.generateHttpClientOperationName(request))
         .asChildOf(clientSpan)
@@ -62,9 +50,9 @@ class HttpClientInstrumentation {
         .withSpanTag("http.url", request.getUri)
         .start()
 
-//      channel.setContext(currentContext.withKey(Span.ContextKey, clientRequestSpan))
       val newContext = currentContext.withKey(Span.ContextKey, clientRequestSpan)
-      ctx.attr(attrKamonContext).set(newContext)
+
+      ctx.channel().toContextAware().setContext(newContext)
 
       pjp.proceed(Array(ctx, encodeContext(newContext, request), out))
     }
@@ -73,14 +61,14 @@ class HttpClientInstrumentation {
   @After("decoderPointcut() && args(ctx, *, out)")
   def onDecodeResponse(ctx: ChannelHandlerContext, out: java.util.List[AnyRef]): Unit = {
     if (out.size() > 0 && out.get(0).isHttpResponse()) {
-      val span = ctx.attr(attrKamonContext).get().get(Span.ContextKey)
-      span.finish()
+      val clientSpan = ctx.channel().getContext().get(Span.ContextKey)
+      clientSpan.finish()
     }
   }
 
   @AfterThrowing("decoderPointcut() && args(ctx, *, *)")
   def onDecodeError(ctx: ChannelHandlerContext): Unit = {
-    val span = ctx.channel().toContextAware().context.get(Span.ContextKey)
-    span.addSpanTag("error", value = true).finish()
+    val clientSpan = ctx.channel().getContext().get(Span.ContextKey)
+    clientSpan.addSpanTag("error", value = true).finish()
   }
 }

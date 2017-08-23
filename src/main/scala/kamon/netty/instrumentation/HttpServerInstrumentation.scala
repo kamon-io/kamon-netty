@@ -47,7 +47,7 @@ class HttpServerInstrumentation {
 
   @Before("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, response, *)")
   def onEncodeResponse(ctx: ChannelHandlerContext, response:HttpResponse): Unit = {
-    val serverSpan = ctx.channel().toContextAware().context.get(Span.ContextKey)
+    val serverSpan = ctx.channel().getContext().get(Span.ContextKey)
     if(isError(response.getStatus.code()))
       serverSpan.addSpanTag("error", value = true)
     serverSpan.finish()

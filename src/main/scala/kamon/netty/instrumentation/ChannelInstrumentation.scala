@@ -28,11 +28,9 @@ trait ChannelContextAware {
   @volatile @BeanProperty var context:Context = Kamon.currentContext()
 }
 
-
 trait RequestContextAware {
   @volatile @BeanProperty var context:Context = Kamon.currentContext()
 }
-
 
 @Aspect
 class ChannelInstrumentation {
@@ -45,7 +43,6 @@ class ChannelInstrumentation {
   @After("execution(io.netty.handler.codec.http.HttpMessage+.new(..)) && this(request)")
   def afterCreation(request: RequestContextAware): Unit = {
     // Force traceContext initialization.
-    request.context
+    request.getContext()
   }
-
 }

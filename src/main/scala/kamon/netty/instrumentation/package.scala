@@ -23,9 +23,20 @@ import kamon.context.{Context, TextMap}
 
 package object instrumentation {
 
-  implicit class ContextAwareSyntax(val channel: io.netty.channel.Channel) extends AnyVal {
+  implicit class ChannelSyntax(val channel: io.netty.channel.Channel) extends AnyVal {
     def toContextAware(): ChannelContextAware =
       channel.asInstanceOf[ChannelContextAware]
+
+    def getContext(): Context =
+      channel.toContextAware().getContext
+  }
+
+  implicit class RequestSyntax(val request: HttpRequest) extends AnyVal {
+    def toContextAware(): RequestContextAware =
+      request.asInstanceOf[RequestContextAware]
+
+    def getContext(): Context =
+      request.toContextAware().getContext
   }
 
   implicit class HttpSyntax(val obj: AnyRef) extends AnyVal {
