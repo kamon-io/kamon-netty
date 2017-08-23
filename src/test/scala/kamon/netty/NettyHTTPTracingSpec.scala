@@ -50,6 +50,9 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
               clientFinishedSpan.operationName shouldBe s"localhost:$port/route"
               clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
 
+              serverFinishedSpan.context.traceID shouldBe clientFinishedSpan.context.traceID
+              serverFinishedSpan.context.parentID shouldBe clientFinishedSpan.context.spanID
+
               reporter.nextSpan() shouldBe empty
             }
           }
@@ -74,6 +77,14 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
 
               clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
               clientFinishedSpan.operationName shouldBe s"localhost:$port/error"
+
+              serverFinishedSpan.context.parentID shouldBe clientFinishedSpan.context.spanID
+              clientFinishedSpan.context.parentID shouldBe clientSpan.context.spanID
+
+              serverFinishedSpan.context.traceID shouldBe clientFinishedSpan.context.traceID
+              serverFinishedSpan.context.parentID shouldBe clientFinishedSpan.context.spanID
+
+              reporter.nextSpan() shouldBe empty
             }
           }
         }
@@ -98,8 +109,8 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
               clientFinishedSpan.operationName shouldBe s"localhost:$port/fetch-in-chunks"
               clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
 
-              serverFinishedSpan.context.parentID.string shouldBe clientSpan.context.spanID.string
-              clientFinishedSpan.context.parentID.string shouldBe clientSpan.context.spanID.string
+              serverFinishedSpan.context.parentID shouldBe clientFinishedSpan.context.spanID
+              clientFinishedSpan.context.parentID shouldBe clientSpan.context.spanID
 
               reporter.nextSpan() shouldBe empty
             }
@@ -126,8 +137,8 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
               clientFinishedSpan.operationName shouldBe s"localhost:$port/fetch-in-chunks"
               clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
 
-              serverFinishedSpan.context.parentID.string shouldBe clientSpan.context.spanID.string
-              clientFinishedSpan.context.parentID.string shouldBe clientSpan.context.spanID.string
+              serverFinishedSpan.context.parentID shouldBe clientFinishedSpan.context.spanID
+              clientFinishedSpan.context.parentID shouldBe clientSpan.context.spanID
 
               reporter.nextSpan() shouldBe empty
             }
@@ -164,21 +175,33 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
             httpClient.execute(httpClient.get(s"http://localhost:$port/route?param=123"))
             httpClient.execute(httpClient.get(s"http://localhost:$port/route?param=123"))
 
-            eventually(timeout(5 seconds)) {
-              val serverFinishedSpan = reporter.nextSpan().value
+            eventually(timeout(2 seconds)) {
+              val serverFinishedSpan1 = reporter.nextSpan().value
               val clientFinishedSpan1 = reporter.nextSpan().value
+              val serverFinishedSpan2 = reporter.nextSpan().value
               val clientFinishedSpan2 = reporter.nextSpan().value
 
-              serverFinishedSpan.operationName shouldBe "route.get"
-              serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
+              serverFinishedSpan1.operationName shouldBe "route.get"
+              serverFinishedSpan1.tags should contain ("span.kind" -> TagValue.String("server"))
 
               clientFinishedSpan1.operationName shouldBe s"localhost:$port/route"
               clientFinishedSpan1.tags should contain ("span.kind" -> TagValue.String("client"))
 
+              serverFinishedSpan1.context.traceID shouldBe clientFinishedSpan1.context.traceID
+              serverFinishedSpan1.context.parentID shouldBe clientFinishedSpan1.context.spanID
+
+              serverFinishedSpan2.operationName shouldBe "route.get"
+              serverFinishedSpan2.tags should contain ("span.kind" -> TagValue.String("server"))
+
               clientFinishedSpan2.operationName shouldBe s"localhost:$port/route"
               clientFinishedSpan2.tags should contain ("span.kind" -> TagValue.String("client"))
 
-              clientFinishedSpan1.context.parentID.string shouldBe clientFinishedSpan2.context.parentID.string
+              serverFinishedSpan2.context.traceID shouldBe clientFinishedSpan2.context.traceID
+              serverFinishedSpan2.context.parentID shouldBe clientFinishedSpan2.context.spanID
+
+              clientFinishedSpan1.context.parentID shouldBe clientFinishedSpan2.context.parentID
+
+              clientFinishedSpan1.context.parentID shouldBe clientSpan.context.spanID
 
               reporter.nextSpan() shouldBe empty
             }
