@@ -16,32 +16,33 @@
 
 package kamon.netty.instrumentation
 
-import java.util
+import kamon.agent.scala.KamonInstrumentation
 
-import io.netty.channel.{Channel, EventLoop}
-import io.netty.util.concurrent.EventExecutor
-import kamon.netty.Metrics
-import kamon.netty.util.MonitoredQueue
-import org.aspectj.lang.ProceedingJoinPoint
-import org.aspectj.lang.annotation._
+class EpollEventLoopInstrumentation extends KamonInstrumentation {
+//
+//  forTargetType("io.netty.channel.epoll.EpollEventLoop") { builder ⇒
+//    builder
+//      .withAdvisorFor(named("add"), classOf[EpollAddMethodAdvisor])
+//      .withAdvisorFor(named("remove"), classOf[RemoveMethodAdvisor])
+//      .withAdvisorFor(named("newTaskQueue"), classOf[NewTaskQueueMethodAdvisor])
+//      .build()
+//  }
 
-@Aspect
-class EpollEventLoopInstrumentation {
-  import kamon.netty.util.EventLoopUtils._
-
-  @After("execution(* io.netty.channel.epoll.EpollEventLoop.add(..)) && this(eventLoop)")
-  def onAdd(eventLoop: EventExecutor): Unit =
-    Metrics.forEventLoop(name(eventLoop)).registeredChannels.increment()
-
-  @After("execution(* io.netty.channel.epoll.EpollEventLoop.remove(..)) && args(channel) && this(eventLoop)")
-  def onRemove(eventLoop: EventExecutor, channel:Channel): Unit = {
-    if(channel.isOpen)
-      Metrics.forEventLoop(name(eventLoop)).registeredChannels.decrement()
-  }
-
-  @Around("execution(* io.netty.channel.epoll.EpollEventLoop.newTaskQueue(..)) && this(eventLoop)")
-  def onNewTaskQueue(pjp: ProceedingJoinPoint, eventLoop: EventLoop): Any = {
-    val queue = pjp.proceed().asInstanceOf[util.Queue[Runnable]]
-    MonitoredQueue(eventLoop, queue)
-  }
+//  @After("execution(* io.netty.channel.epoll.EpollEventLoop.add(..)) && this(eventLoop)")
+//  def onAdd(eventLoop: EventExecutor): Unit =
+//    Metrics.forEventLoop(name(eventLoop)).registeredChannels.increment()
+//
+//  @After("execution(* io.netty.channel.epoll.EpollEventLoop.remove(..)) && args(channel) && this(eventLoop)")
+//  def onRemove(eventLoop: EventExecutor, channel:Channel): Unit = {
+//    if(channel.isOpen)
+//      Metrics.forEventLoop(name(eventLoop)).registeredChannels.decrement()
+//  }
+//
+//  @Around("execution(* io.netty.channel.epoll.EpollEventLoop.newTaskQueue(..)) && this(eventLoop)")
+//  def onNewTaskQueue(pjp: ProceedingJoinPoint, eventLoop: EventLoop): Any = {
+//    val queue = pjp.proceed().asInstanceOf[util.Queue[Runnable]]
+//    MonitoredQueue(eventLoop, queue)
+//  }
 }
+
+

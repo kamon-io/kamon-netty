@@ -20,6 +20,7 @@ package kamon.netty
 import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
 import kamon.Kamon
 import kamon.context.{Context, TextMap}
+import kamon.netty.instrumentation.mixin.{ChannelContextAware, RequestContextAware}
 
 package object instrumentation {
 

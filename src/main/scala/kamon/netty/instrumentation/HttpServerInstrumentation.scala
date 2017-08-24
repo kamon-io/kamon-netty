@@ -16,41 +16,48 @@
 
 package kamon.netty.instrumentation
 
-import io.netty.channel.ChannelHandlerContext
-import io.netty.handler.codec.http.HttpResponse
-import kamon.Kamon
-import kamon.netty.Netty
-import kamon.trace.Span
-import org.aspectj.lang.annotation.{After, Aspect, Before}
+import kamon.agent.scala.KamonInstrumentation
+import kamon.netty.instrumentation.advisor.{ServerDecodeMethodAdvisor, ServerEncodeMethodAdvisor}
 
-@Aspect
-class HttpServerInstrumentation {
+class HttpServerInstrumentation extends KamonInstrumentation {
 
-  @After("execution(* io.netty.handler.codec.http.HttpObjectDecoder+.decode(..)) && args(ctx, *, out)")
-  def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[AnyRef]): Unit = {
-    if (out.size() > 0 && out.get(0).isHttpRequest()) {
-      val request = out.get(0).toHttpRequest()
-      val channel = ctx.channel().toContextAware()
-      val incomingContext = decodeContext(request)
-      val serverSpan = Kamon.buildSpan(Netty.generateOperationName(request))
-        .asChildOf(incomingContext.get(Span.ContextKey))
-        .withStartTimestamp(channel.startTime)
-        .withSpanTag("span.kind", "server")
-        .withSpanTag("component", "netty")
-        .withSpanTag("http.method", request.getMethod.name())
-        .withSpanTag("http.url", request.getUri)
-        .start()
-
-      channel.setContext(incomingContext.withKey(Span.ContextKey, serverSpan))
-    }
+  forSubtypeOf("io.netty.handler.codec.http.HttpObjectDecoder") { builder =>
+    builder
+      .withAdvisorFor(named("decode").and(takesArguments(3)), classOf[ServerDecodeMethodAdvisor])
+      .build()
   }
 
-  @Before("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, response, *)")
-  def onEncodeResponse(ctx: ChannelHandlerContext, response:HttpResponse): Unit = {
-    val serverSpan = ctx.channel().getContext().get(Span.ContextKey)
-    if(isError(response.getStatus.code()))
-      serverSpan.addSpanTag("error", value = true)
-    serverSpan.finish()
+  forSubtypeOf("io.netty.handler.codec.http.HttpObjectEncoder") { builder =>
+    builder
+      .withAdvisorFor(named("encode").and(takesArguments(3)), classOf[ServerEncodeMethodAdvisor])
+      .build()
   }
+
+//  @After("execution(* io.netty.handler.codec.http.HttpObjectDecoder+.decode(..)) && args(ctx, *, out)")
+//  def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[AnyRef]): Unit = {
+//    if (out.size() > 0 && out.get(0).isHttpRequest()) {
+//      val request = out.get(0).toHttpRequest()
+//      val channel = ctx.channel().toContextAware()
+//      val incomingContext = decodeContext(request)
+//      val serverSpan = Kamon.buildSpan(Netty.generateOperationName(request))
+//        .asChildOf(incomingContext.get(Span.ContextKey))
+//        .withStartTimestamp(channel.startTime)
+//        .withSpanTag("span.kind", "server")
+//        .withSpanTag("component", "netty")
+//        .withSpanTag("http.method", request.getMethod.name())
+//        .withSpanTag("http.url", request.getUri)
+//        .start()
+//
+//      channel.setContext(incomingContext.withKey(Span.ContextKey, serverSpan))
+//    }
+//  }
+//
+//  @Before("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, response, *)")
+//  def onEncodeResponse(ctx: ChannelHandlerContext, response:HttpResponse): Unit = {
+//    val serverSpan = ctx.channel().getContext().get(Span.ContextKey)
+//    if(isError(response.getStatus.code()))
+//      serverSpan.addSpanTag("error", value = true)
+//    serverSpan.finish()
+//  }
 }
 

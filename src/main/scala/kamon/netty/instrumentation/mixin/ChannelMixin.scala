@@ -14,14 +14,25 @@
  * =========================================================================================
  */
 
-package kamon.netty.util
+package kamon.netty.instrumentation.mixin
 
-import io.netty.util.concurrent.EventExecutor
-import kamon.netty.instrumentation.mixin.NamedEventLoopGroup
+import kamon.Kamon
+import kamon.agent.api.instrumentation.Initializer
+import kamon.context.Context
 
-object EventLoopUtils {
-  def name(eventLoop: EventExecutor): String = {
-    val sanitize:String => String = str => str.replaceAll("(.)(\\p{Upper})", "$1-$2").toLowerCase()
-    s"${eventLoop.parent().asInstanceOf[NamedEventLoopGroup].name}-${sanitize(eventLoop.getClass.getSimpleName)}"
-  }
+import scala.beans.BeanProperty
+
+
+trait ChannelContextAware {
+  @volatile var startTime: Long = 0
+  @volatile @BeanProperty var context: Context = _
+}
+
+/**
+  * --
+  */
+class ChannelContextAwareMixin extends ChannelContextAware {
+
+  @Initializer
+  def init(): Unit = context = Kamon.currentContext()
 }

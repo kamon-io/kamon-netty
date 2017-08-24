@@ -16,54 +16,61 @@
 
 package kamon.netty.instrumentation
 
-import io.netty.channel.{Channel, ChannelHandler, ChannelHandlerContext, ChannelInboundHandlerAdapter}
-import kamon.util.Clock
-import org.aspectj.lang.annotation._
+import kamon.agent.scala.KamonInstrumentation
+import kamon.netty.instrumentation.advisor.{ServerChannelReadMethodAdvisor, ServerGroupMethodAdvisor}
+import kamon.netty.instrumentation.mixin.EventLoopMixin
 
-@Aspect
-class ServerBootstrapInstrumentation {
+class ServerBootstrapInstrumentation extends KamonInstrumentation {
 
-  import ServerBootstrapInstrumentation._
-
-  @Before("execution(* io.netty.bootstrap.ServerBootstrap.group(..)) && args(bossGroup, workerGroup)")
-  def onNewServerBootstrap(bossGroup:NamedEventLoopGroup, workerGroup:NamedEventLoopGroup):Unit = {
-    if(bossGroup == workerGroup) {
-      bossGroup.name = BossGroupName
-      workerGroup.name = BossGroupName
-    } else {
-      bossGroup.name = BossGroupName
-      workerGroup.name = WorkerGroupName
-    }
+  forSubtypeOf("io.netty.channel.EventLoopGroup") { builder =>
+    builder
+      .withMixin(classOf[EventLoopMixin])
+      .build()
   }
 
-  @After("execution(* io.netty.bootstrap.ServerBootstrap.ServerBootstrapAcceptor.channelRead(..)) && args(ctx, child)")
-  def onChannelRead(ctx: ChannelHandlerContext, child: Channel):Unit = {
-    val pipeline = child.pipeline()
-    if(pipeline.get(KamonHandler) == null)
-      pipeline.addFirst(KamonHandler, new KamonHandler())
+  forTargetType("io.netty.bootstrap.ServerBootstrap") { builder =>
+    builder
+      .withAdvisorFor(named("group").and(takesArguments(2)), classOf[ServerGroupMethodAdvisor])
+      .build()
   }
+
+  forTargetType("io.netty.bootstrap.ServerBootstrap.ServerBootstrapAcceptor") { builder =>
+    builder
+      .withAdvisorFor(named("channelRead").and(takesArguments(2)), classOf[ServerChannelReadMethodAdvisor])
+      .build()
+  }
+
+//  @Before("execution(* io.netty.bootstrap.ServerBootstrap.group(..)) && args(bossGroup, workerGroup)")
+//  def onNewServerBootstrap(bossGroup:NamedEventLoopGroup, workerGroup:NamedEventLoopGroup):Unit = {
+//    if(bossGroup == workerGroup) {
+//      bossGroup.name = BossGroupName
+//      workerGroup.name = BossGroupName
+//    } else {
+//      bossGroup.name = BossGroupName
+//      workerGroup.name = WorkerGroupName
+//    }
+//  }
+
+//  @After("execution(* io.netty.bootstrap.ServerBootstrap.ServerBootstrapAcceptor.channelRead(..)) && args(ctx, child)")
+//  def onChannelRead(ctx: ChannelHandlerContext, child: Channel):Unit = {
+//    val pipeline = child.pipeline()
+//    if(pipeline.get(KamonHandler) == null)
+//      pipeline.addFirst(KamonHandler, new KamonHandler())
+//  }
 }
 
 object ServerBootstrapInstrumentation {
   val BossGroupName = "boss-group"
   val WorkerGroupName = "worker-group"
   val KamonHandler = "kamon-handler"
-
-  @ChannelHandler.Sharable
-  private class KamonHandler extends ChannelInboundHandlerAdapter {
-    override def channelRead(ctx: ChannelHandlerContext, msg: AnyRef): Unit = {
-      ctx.channel().toContextAware().startTime = Clock.microTimestamp()
-      super.channelRead(ctx, msg)
-    }
-  }
 }
 
-@Aspect
-class EventLoopMixin {
-  @DeclareMixin("io.netty.channel.EventLoopGroup+")
-  def mixinEventLoopGroupWithNamedEventLoopGroup: NamedEventLoopGroup = new NamedEventLoopGroup {}
-}
-
-trait NamedEventLoopGroup {
-  var name:String = _
-}
+//@Aspect
+//class EventLoopMixin {
+//  @DeclareMixin("io.netty.channel.EventLoopGroup+")
+//  def mixinEventLoopGroupWithNamedEventLoopGroup: NamedEventLoopGroup = new NamedEventLoopGroup {}
+//}
+//
+//trait NamedEventLoopGroup {
+//  var name:String = _
+//}

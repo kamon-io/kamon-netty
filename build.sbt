@@ -31,11 +31,11 @@ lazy val root = (project in file("."))
   .enablePlugins(JavaAgent)
   .settings(isSnapshot := true)
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
-//  .settings(javaAgents += "io.kamon"    % "kamon-agent"   % "0.0.3-experimental"  % "compile;test")
-  .settings(javaAgents += "org.aspectj" % "aspectjweaver"  % "1.8.10"  % "compile;test;runtime")
+  .settings(javaAgents += "io.kamon"    % "kamon-agent"   % "0.0.3-experimental"  % "compile;test")
+//  .settings(javaAgents += "org.aspectj" % "aspectjweaver"  % "1.8.10"  % "compile;test;runtime")
   .settings(
     libraryDependencies ++=
-      compileScope(kamonCore) ++
+      compileScope(kamonCore, scalaExtension) ++
       providedScope(netty, nettyNative) ++
       testScope(scalatest, kamonTestkit, logbackClassic, logback))
 
