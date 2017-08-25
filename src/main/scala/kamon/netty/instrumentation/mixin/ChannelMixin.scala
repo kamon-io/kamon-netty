@@ -24,14 +24,18 @@ import scala.beans.BeanProperty
 
 
 trait ChannelContextAware {
-  @volatile var startTime: Long = 0
-  @volatile @BeanProperty var context: Context = _
+  def setStartTime(value:Long):Unit
+  def getStartTime:Long
+  def setContext(ctx:Context):Unit
+  def getContext:Context
 }
 
 /**
   * --
   */
 class ChannelContextAwareMixin extends ChannelContextAware {
+  @volatile @BeanProperty var startTime = 0L
+  @volatile @BeanProperty var context:Context = _
 
   @Initializer
   def init(): Unit = context = Kamon.currentContext()

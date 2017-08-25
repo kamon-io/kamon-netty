@@ -13,5 +13,4 @@ public class NewTaskQueueMethodAdvisor {
   static void onExit(@This Object eventLoop, @Return(readOnly = false) Queue<Runnable> queue) {
     queue = MonitoredQueue.apply((EventLoop) eventLoop, queue);
   }
-
 }

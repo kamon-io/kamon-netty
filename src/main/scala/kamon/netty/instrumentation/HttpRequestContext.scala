@@ -37,7 +37,7 @@ object KamonHandlerPortable {
   @ChannelHandler.Sharable
   class KamonHandler extends ChannelInboundHandlerAdapter {
     override def channelRead(ctx: ChannelHandlerContext, msg: AnyRef): Unit = {
-      ctx.channel().toContextAware().startTime = Clock.microTimestamp()
+      ctx.channel().toContextAware().setStartTime(Clock.microTimestamp())
       super.channelRead(ctx, msg)
     }
   }

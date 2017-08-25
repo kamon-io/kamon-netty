@@ -9,9 +9,8 @@ import kamon.netty.instrumentation.HttpRequestContext;
 public class ClientEncodeMethodAdvisor {
 
   @OnMethodEnter
-  static void onEnter(
-      @Argument(value = 0) Object ctx,
-      @Argument(value = 1, readOnly = false) HttpRequest request) {
+  static void onEnter(@Argument(value = 0) Object ctx,
+                      @Argument(value = 1, readOnly = false) HttpRequest request) {
     request = HttpRequestContext.withContext(request, (ChannelHandlerContext) ctx);
   }
 }

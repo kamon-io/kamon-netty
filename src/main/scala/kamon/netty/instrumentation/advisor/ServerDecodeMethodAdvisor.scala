@@ -22,7 +22,7 @@ object ServerDecodeMethodAdvisor {
       val incomingContext = decodeContext(request)
       val serverSpan = Kamon.buildSpan(Netty.generateOperationName(request))
         .asChildOf(incomingContext.get(Span.ContextKey))
-        .withStartTimestamp(channel.startTime)
+        .withStartTimestamp(channel.getStartTime)
         .withSpanTag("span.kind", "server")
         .withSpanTag("component", "netty")
         .withSpanTag("http.method", request.getMethod.name())
