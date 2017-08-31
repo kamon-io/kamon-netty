@@ -35,10 +35,10 @@ class HttpServerInstrumentation {
       val serverSpan = Kamon.buildSpan(Netty.generateOperationName(request))
         .asChildOf(incomingContext.get(Span.ContextKey))
         .withStartTimestamp(channel.startTime)
-        .withSpanTag("span.kind", "server")
-        .withSpanTag("component", "netty")
-        .withSpanTag("http.method", request.getMethod.name())
-        .withSpanTag("http.url", request.getUri)
+        .withTag("span.kind", "server")
+        .withTag("component", "netty")
+        .withTag("http.method", request.getMethod.name())
+        .withTag("http.url", request.getUri)
         .start()
 
       channel.setContext(incomingContext.withKey(Span.ContextKey, serverSpan))
@@ -49,7 +49,7 @@ class HttpServerInstrumentation {
   def onEncodeResponse(ctx: ChannelHandlerContext, response:HttpResponse): Unit = {
     val serverSpan = ctx.channel().getContext().get(Span.ContextKey)
     if(isError(response.getStatus.code()))
-      serverSpan.addSpanTag("error", value = true)
+      serverSpan.addTag("error", value = true)
     serverSpan.finish()
   }
 }

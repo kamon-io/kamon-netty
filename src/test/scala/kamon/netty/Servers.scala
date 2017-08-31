@@ -107,13 +107,17 @@ private class HttpServerHandler extends ChannelInboundHandlerAdapter {
         HttpHeaders.setTransferEncodingChunked(response)
         response.headers.set("Content-Type", "text/plain")
 
-
         ctx.write(response)
-          .addListener((cf: ChannelFuture) =>
-            writeChunk(cf.channel()).addListener((cf: ChannelFuture) =>
-              writeChunk(cf.channel()).addListener((cf: ChannelFuture) =>
-                writeChunk(cf.channel()).addListener((cf: ChannelFuture) =>
-                  (writeLastContent _).andThen(addCloseListener(isKeepAlive))(cf.channel())))))
+          .addListener(new ChannelFutureListener {
+            override def operationComplete(cf: ChannelFuture): Unit =
+              writeChunk(cf.channel()).addListener(new ChannelFutureListener {
+                override def operationComplete(cf: ChannelFuture): Unit =
+                  writeChunk(cf.channel()).addListener(new ChannelFutureListener {
+                    override def operationComplete(cf: ChannelFuture) =
+                      writeChunk(cf.channel()).addListener(new ChannelFutureListener {
+                        override def operationComplete(cf: ChannelFuture) =
+                          (writeLastContent _).andThen(addCloseListener(isKeepAlive))(cf.channel())})})})})
+
       } else {
         val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, Unpooled.wrappedBuffer(ContentOk))
         response.headers.set("Content-Type", "text/plain")

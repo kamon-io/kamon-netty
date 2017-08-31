@@ -44,10 +44,10 @@ class HttpClientInstrumentation {
     else {
       val clientRequestSpan = Kamon.buildSpan(Netty.generateHttpClientOperationName(request))
         .asChildOf(clientSpan)
-        .withSpanTag("span.kind", "client")
-        .withSpanTag("component", "netty")
-        .withSpanTag("http.method", request.getMethod.name())
-        .withSpanTag("http.url", request.getUri)
+        .withTag("span.kind", "client")
+        .withTag("component", "netty")
+        .withTag("http.method", request.getMethod.name())
+        .withTag("http.url", request.getUri)
         .start()
 
       val newContext = currentContext.withKey(Span.ContextKey, clientRequestSpan)
@@ -69,6 +69,6 @@ class HttpClientInstrumentation {
   @AfterThrowing("decoderPointcut() && args(ctx, *, *)")
   def onDecodeError(ctx: ChannelHandlerContext): Unit = {
     val clientSpan = ctx.channel().getContext().get(Span.ContextKey)
-    clientSpan.addSpanTag("error", value = true).finish()
+    clientSpan.addTag("error", value = true).finish()
   }
 }

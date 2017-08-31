@@ -20,8 +20,8 @@ import java.net.URI
 
 import com.typesafe.config.Config
 import io.netty.handler.codec.http.HttpRequest
-import kamon.Kamon
 import kamon.util.DynamicAccess
+import kamon.{Kamon, OnReconfigureHook}
 
 object Netty {
   private var nameGenerator: NameGenerator = new DefaultNameGenerator()
@@ -34,7 +34,10 @@ object Netty {
   def generateHttpClientOperationName(request: HttpRequest): String =
     nameGenerator.generateHttpClientOperationName(request)
 
-  Kamon.onReconfigure((newConfig: Config) => Netty.loadConfiguration(newConfig))
+  Kamon.onReconfigure(new OnReconfigureHook {
+    override def onReconfigure(newConfig: Config): Unit =
+      Netty.loadConfiguration(newConfig)
+  })
 
   private def loadConfiguration(config: Config): Unit = synchronized {
     val dynamic = new DynamicAccess(getClass.getClassLoader)
@@ -65,7 +68,7 @@ class DefaultNameGenerator extends NameGenerator {
   override def generateOperationName(request: HttpRequest): String = {
     localCache.getOrElseUpdate(s"${request.getMethod.name()}${request.getUri}", {
       // Convert paths of form GET /foo/bar/$paramname<regexp>/blah to foo.bar.paramname.blah.get
-      val uri = new URI(request.getUri())
+      val uri = new URI(request.getUri)
       val p = normalizePattern.replaceAllIn(uri.getPath, "$1").replace('/', '.').dropWhile(_ == '.')
       val normalisedPath = {
         if (p.lastOption.exists(_ != '.')) s"$p."
