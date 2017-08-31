@@ -16,7 +16,7 @@
 val kamonCore       = "io.kamon"        %% "kamon-core"                     % "1.0.0-RC1-d5719438ed9a93c4035262fa8bd94ee60eead048"
 val kamonTestkit    = "io.kamon"        %% "kamon-testkit"                  % "1.0.0-RC1-d5719438ed9a93c4035262fa8bd94ee60eead048"
 
-val scalaExtension  = "io.kamon"        %% "agent-scala-extension"          % "0.0.4-experimental"
+val scalaExtension  = "io.kamon"        %% "agent-scala-extension"          % "0.0.5-experimental"
 
 val netty           = "io.netty"        %  "netty-all"                      % "4.0.51.Final"
 val nettyNative     = "io.netty"        %  "netty-transport-native-epoll"   % "4.0.51.Final"    classifier "linux-x86_64"
@@ -32,7 +32,7 @@ lazy val root = (project in file("."))
   .settings(isSnapshot := true)
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
   .settings(resolvers += Resolver.mavenLocal)
-  .settings(javaAgents += "io.kamon"    % "kamon-agent"   % "0.0.4-experimental"  % "compile;test")
+  .settings(javaAgents += "io.kamon"    % "kamon-agent"   % "0.0.5-experimental"  % "compile;test")
 //  .settings(javaAgents += "org.aspectj" % "aspectjweaver"  % "1.8.10"  % "compile;test;runtime")
   .settings(
     libraryDependencies ++=
