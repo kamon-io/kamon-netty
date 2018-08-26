@@ -13,10 +13,10 @@
  * =========================================================================================
  */
 
-val kamonCore       = "io.kamon"        %% "kamon-core"                     % "1.0.0-RC1-d5719438ed9a93c4035262fa8bd94ee60eead048"
-val kamonTestkit    = "io.kamon"        %% "kamon-testkit"                  % "1.0.0-RC1-d5719438ed9a93c4035262fa8bd94ee60eead048"
+val kamonCore       = "io.kamon"        %% "kamon-core"                     % "1.1.3"
+val kamonTestkit    = "io.kamon"        %% "kamon-testkit"                  % "1.1.3"
 
-val scalaExtension  = "io.kamon"        %% "agent-scala-extension"          % "0.0.5-experimental"
+val scalaExtension  = "io.kamon"        %% "kanela-scala-extension"         % "0.0.14"
 
 val netty           = "io.netty"        %  "netty-all"                      % "4.0.51.Final"
 val nettyNative     = "io.netty"        %  "netty-transport-native-epoll"   % "4.0.51.Final"    classifier "linux-x86_64"
@@ -26,18 +26,19 @@ val logback         = "ch.qos.logback"  %  "logback-classic"                % "1
 lazy val root = (project in file("."))
   .settings(Seq(
       name := "kamon-netty",
-      scalaVersion := "2.12.3",
-      crossScalaVersions := Seq("2.11.8", "2.12.3")))
+      scalaVersion := "2.12.6",
+      crossScalaVersions := Seq("2.11.8", "2.12.6")))
   .enablePlugins(JavaAgent)
   .settings(isSnapshot := true)
+  .settings(resolvers += Resolver.bintrayRepo("kamon-io", "releases"))
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
   .settings(resolvers += Resolver.mavenLocal)
-  .settings(javaAgents += "io.kamon"    % "kamon-agent"   % "0.0.5-experimental"  % "compile;test")
+  .settings(javaAgents += "io.kamon"    % "kanela-agent"   % "0.0.14"  % "compile;test")
 //  .settings(javaAgents += "org.aspectj" % "aspectjweaver"  % "1.8.10"  % "compile;test;runtime")
   .settings(
     libraryDependencies ++=
       compileScope(kamonCore, scalaExtension) ++
       providedScope(netty, nettyNative) ++
-      testScope(scalatest, kamonTestkit, logbackClassic, logback))
+      testScope(scalatest, kamonTestkit, nettyNative, logbackClassic, logback))
 
 

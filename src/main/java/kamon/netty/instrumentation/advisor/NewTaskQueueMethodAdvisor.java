@@ -2,10 +2,10 @@ package kamon.netty.instrumentation.advisor;
 
 import io.netty.channel.EventLoop;
 import java.util.Queue;
-import kamon.agent.libs.net.bytebuddy.asm.Advice.OnMethodExit;
-import kamon.agent.libs.net.bytebuddy.asm.Advice.Return;
-import kamon.agent.libs.net.bytebuddy.asm.Advice.This;
 import kamon.netty.util.MonitoredQueue;
+import kanela.agent.libs.net.bytebuddy.asm.Advice.OnMethodExit;
+import kanela.agent.libs.net.bytebuddy.asm.Advice.Return;
+import kanela.agent.libs.net.bytebuddy.asm.Advice.This;
 
 public class NewTaskQueueMethodAdvisor {
 

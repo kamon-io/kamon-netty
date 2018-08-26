@@ -1,9 +1,9 @@
 package kamon.netty.instrumentation
 
-import kamon.agent.scala.KamonInstrumentation
 import kamon.netty.instrumentation.mixin.RequestContextAwareMixin
+import kanela.agent.scala.KanelaInstrumentation
 
-class HttpMessageInstrumentation extends KamonInstrumentation {
+class HttpMessageInstrumentation extends KanelaInstrumentation {
 
   forSubtypeOf("io.netty.handler.codec.http.HttpMessage") { builder ⇒
     builder

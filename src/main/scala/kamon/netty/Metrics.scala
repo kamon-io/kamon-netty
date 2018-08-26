@@ -31,9 +31,9 @@ object Metrics {
     *    - task-queue-size: The number of tasks that are pending for processing.
     *    - task-waiting-time: The waiting time in the queue.
     */
-  val registeredChannelsMetric = Kamon.minMaxCounter("netty.event-loop.registered-channels")
+  val registeredChannelsMetric = Kamon.rangeSampler("netty.event-loop.registered-channels")
   val taskProcessingTimeMetric = Kamon.histogram("netty.event-loop.task-processing-time", time.nanoseconds)
-  val taskQueueSizeMetric = Kamon.minMaxCounter("netty.event-loop.task-queue-size")
+  val taskQueueSizeMetric = Kamon.rangeSampler("netty.event-loop.task-queue-size")
   val taskWaitingTimeMetric = Kamon.histogram("netty.event-loop.task-waiting-time", time.nanoseconds)
 
 
@@ -49,9 +49,9 @@ object Metrics {
   }
 
   case class EventLoopMetrics(tags: Map[String, String],
-                              registeredChannels: MinMaxCounter,
+                              registeredChannels: RangeSampler,
                               taskProcessingTime: Histogram,
-                              taskQueueSize: MinMaxCounter,
+                              taskQueueSize: RangeSampler,
                               taskWaitingTime: Histogram) {
 
     def cleanup(): Unit = {

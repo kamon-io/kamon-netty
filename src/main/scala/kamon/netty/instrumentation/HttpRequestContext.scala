@@ -5,7 +5,6 @@ import io.netty.handler.codec.http.HttpRequest
 import kamon.Kamon
 import kamon.netty.Netty
 import kamon.trace.Span
-import kamon.util.Clock
 
 object HttpRequestContext {
 
@@ -15,10 +14,10 @@ object HttpRequestContext {
     if (clientSpan.nonEmpty()) {
       val clientRequestSpan = Kamon.buildSpan(Netty.generateHttpClientOperationName(request))
         .asChildOf(clientSpan)
-        .withSpanTag("span.kind", "client")
-        .withSpanTag("component", "netty")
-        .withSpanTag("http.method", request.getMethod.name())
-        .withSpanTag("http.url", request.getUri)
+        .withTag("span.kind", "client")
+        .withTag("component", "netty")
+        .withTag("http.method", request.getMethod.name())
+        .withTag("http.url", request.getUri)
         .start()
 
       val newContext = currentContext.withKey(Span.ContextKey, clientRequestSpan)
@@ -37,7 +36,7 @@ object KamonHandlerPortable {
   @ChannelHandler.Sharable
   class KamonHandler extends ChannelInboundHandlerAdapter {
     override def channelRead(ctx: ChannelHandlerContext, msg: AnyRef): Unit = {
-      ctx.channel().toContextAware().setStartTime(Clock.microTimestamp())
+      ctx.channel().toContextAware().setStartTime(Kamon.clock().instant())
       super.channelRead(ctx, msg)
     }
   }

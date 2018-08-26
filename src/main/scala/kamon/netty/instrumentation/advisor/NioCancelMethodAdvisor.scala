@@ -1,9 +1,9 @@
 package kamon.netty.instrumentation.advisor
 
 import io.netty.util.concurrent.EventExecutor
-import kamon.agent.libs.net.bytebuddy.asm.Advice.{OnMethodEnter, This}
 import kamon.netty.Metrics
 import kamon.netty.util.EventLoopUtils.name
+import kanela.agent.libs.net.bytebuddy.asm.Advice.{OnMethodEnter, This}
 
 class NioCancelMethodAdvisor
 object NioCancelMethodAdvisor {

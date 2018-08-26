@@ -1,7 +1,15 @@
 package kamon.netty.instrumentation.mixin
 
-class EventLoopMixin extends NamedEventLoopGroup
-
 trait NamedEventLoopGroup {
-  var name: String = _
+  def setName(name: String)
+  def getName: String
+}
+
+class EventLoopMixin extends NamedEventLoopGroup {
+
+  @volatile var _name: String = _
+
+  override def setName(name: String): Unit = _name = name
+
+  override def getName: String = _name
 }

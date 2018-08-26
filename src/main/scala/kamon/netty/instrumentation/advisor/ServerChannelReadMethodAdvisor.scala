@@ -2,8 +2,8 @@ package kamon.netty.instrumentation
 package advisor
 
 import io.netty.channel.Channel
-import kamon.agent.libs.net.bytebuddy.asm.Advice.{Argument, OnMethodExit}
 import kamon.netty.instrumentation.ServerBootstrapInstrumentation.KamonHandler
+import kanela.agent.libs.net.bytebuddy.asm.Advice.{Argument, OnMethodExit}
 
 class ServerChannelReadMethodAdvisor
 object ServerChannelReadMethodAdvisor {

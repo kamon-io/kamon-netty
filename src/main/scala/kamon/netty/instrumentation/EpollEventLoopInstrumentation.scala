@@ -16,9 +16,10 @@
 
 package kamon.netty.instrumentation
 
-import kamon.agent.scala.KamonInstrumentation
+import kanela.agent.scala.KanelaInstrumentation
 
-class EpollEventLoopInstrumentation extends KamonInstrumentation {
+
+class EpollEventLoopInstrumentation extends KanelaInstrumentation {
 //
 //  forTargetType("io.netty.channel.epoll.EpollEventLoop") { builder ⇒
 //    builder

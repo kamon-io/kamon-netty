@@ -16,15 +16,15 @@
 
 package kamon.netty.util
 
+import kamon.Kamon
 import kamon.metric.Histogram
-import kamon.util.Clock
 
 
 object Latency {
   def measure[A](histogram: Histogram)(thunk: ⇒ A): A = {
-    val start = Clock.relativeNanoTimestamp()
+    val start = Kamon.clock.nanos()
     try thunk finally {
-      val latency = Clock.relativeNanoTimestamp() - start
+      val latency = Kamon.clock().nanos() - start
       histogram.record(latency)
     }
   }

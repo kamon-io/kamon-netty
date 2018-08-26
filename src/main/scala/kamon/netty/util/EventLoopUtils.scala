@@ -22,6 +22,6 @@ import kamon.netty.instrumentation.mixin.NamedEventLoopGroup
 object EventLoopUtils {
   def name(eventLoop: EventExecutor): String = {
     val sanitize:String => String = str => str.replaceAll("(.)(\\p{Upper})", "$1-$2").toLowerCase()
-    s"${eventLoop.parent().asInstanceOf[NamedEventLoopGroup].name}-${sanitize(eventLoop.getClass.getSimpleName)}"
+    s"${eventLoop.parent().asInstanceOf[NamedEventLoopGroup].getName}-${sanitize(eventLoop.getClass.getSimpleName)}"
   }
 }

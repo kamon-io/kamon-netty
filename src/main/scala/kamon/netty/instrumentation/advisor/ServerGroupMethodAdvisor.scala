@@ -1,8 +1,8 @@
 package kamon.netty.instrumentation.advisor
 
-import kamon.agent.libs.net.bytebuddy.asm.Advice.{Argument, OnMethodEnter}
 import kamon.netty.instrumentation.ServerBootstrapInstrumentation.{BossGroupName, WorkerGroupName}
 import kamon.netty.instrumentation.mixin.NamedEventLoopGroup
+import kanela.agent.libs.net.bytebuddy.asm.Advice.{Argument, OnMethodEnter}
 
 class ServerGroupMethodAdvisor
 object ServerGroupMethodAdvisor {
@@ -13,11 +13,11 @@ object ServerGroupMethodAdvisor {
     val bossGroup = _bossGroup.asInstanceOf[NamedEventLoopGroup]
     val workerGroup = _workerGroup.asInstanceOf[NamedEventLoopGroup]
     if(bossGroup == workerGroup) {
-      bossGroup.name = BossGroupName
-      workerGroup.name = BossGroupName
+      bossGroup.setName(BossGroupName)
+      workerGroup.setName(BossGroupName)
     } else {
-      bossGroup.name = BossGroupName
-      workerGroup.name = WorkerGroupName
+      bossGroup.setName(BossGroupName)
+      workerGroup.setName(WorkerGroupName)
     }
   }
 

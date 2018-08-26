@@ -16,21 +16,21 @@
 
 package kamon.netty.instrumentation
 
-import kamon.agent.scala.KamonInstrumentation
 import kamon.netty.instrumentation.advisor.{ClientDecodeMethodAdvisor, ClientEncodeMethodAdvisor}
+import kanela.agent.scala.KanelaInstrumentation
 
-class HttpClientInstrumentation extends KamonInstrumentation {
+class HttpClientInstrumentation extends KanelaInstrumentation {
 
 
-  forTargetType("io.netty.handler.codec.http.HttpClientCodec.Decoder") { builder =>
+  forTargetType("io.netty.handler.codec.http.HttpClientCodec$Decoder") { builder =>
     builder
-      .withAdvisorFor(named("decode").and(takesArguments(3)), classOf[ClientDecodeMethodAdvisor])
+      .withAdvisorFor(method("decode").and(takesArguments(3)), classOf[ClientDecodeMethodAdvisor])
       .build()
   }
 
-  forTargetType("io.netty.handler.codec.http.HttpClientCodec.Encoder") { builder =>
+  forTargetType("io.netty.handler.codec.http.HttpClientCodec$Encoder") { builder =>
     builder
-      .withAdvisorFor(named("decode").and(takesArguments(3)), classOf[ClientEncodeMethodAdvisor])
+      .withAdvisorFor(method("encode").and(takesArguments(3)), classOf[ClientEncodeMethodAdvisor])
       .build()
   }
 

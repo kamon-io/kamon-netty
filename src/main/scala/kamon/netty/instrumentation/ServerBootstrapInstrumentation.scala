@@ -16,11 +16,11 @@
 
 package kamon.netty.instrumentation
 
-import kamon.agent.scala.KamonInstrumentation
 import kamon.netty.instrumentation.advisor.{ServerChannelReadMethodAdvisor, ServerGroupMethodAdvisor}
 import kamon.netty.instrumentation.mixin.EventLoopMixin
+import kanela.agent.scala.KanelaInstrumentation
 
-class ServerBootstrapInstrumentation extends KamonInstrumentation {
+class ServerBootstrapInstrumentation extends KanelaInstrumentation {
 
   forSubtypeOf("io.netty.channel.EventLoopGroup") { builder =>
     builder
@@ -30,13 +30,13 @@ class ServerBootstrapInstrumentation extends KamonInstrumentation {
 
   forTargetType("io.netty.bootstrap.ServerBootstrap") { builder =>
     builder
-      .withAdvisorFor(named("group").and(takesArguments(2)), classOf[ServerGroupMethodAdvisor])
+      .withAdvisorFor(method("group").and(takesArguments(2)), classOf[ServerGroupMethodAdvisor])
       .build()
   }
 
   forTargetType("io.netty.bootstrap.ServerBootstrap.ServerBootstrapAcceptor") { builder =>
     builder
-      .withAdvisorFor(named("channelRead").and(takesArguments(2)), classOf[ServerChannelReadMethodAdvisor])
+      .withAdvisorFor(method("channelRead").and(takesArguments(2)), classOf[ServerChannelReadMethodAdvisor])
       .build()
   }
 

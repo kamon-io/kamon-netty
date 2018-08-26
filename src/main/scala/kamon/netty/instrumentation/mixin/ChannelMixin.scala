@@ -16,26 +16,34 @@
 
 package kamon.netty.instrumentation.mixin
 
-import kamon.Kamon
-import kamon.agent.api.instrumentation.Initializer
-import kamon.context.Context
+import java.time.Instant
 
-import scala.beans.BeanProperty
+import kamon.Kamon
+import kamon.context.Context
+import kanela.agent.api.instrumentation.mixin.Initializer
 
 
 trait ChannelContextAware {
-  def setStartTime(value:Long):Unit
-  def getStartTime:Long
-  def setContext(ctx:Context):Unit
-  def getContext:Context
+  def setStartTime(value: Instant): Unit
+  def getStartTime: Instant
+  def setContext(ctx: Context):Unit
+  def getContext: Context
 }
 
 /**
   * --
   */
 class ChannelContextAwareMixin extends ChannelContextAware {
-  @volatile @BeanProperty var startTime = 0L
-  @volatile @BeanProperty var context:Context = _
+  @volatile var startTime: Instant = _
+  @volatile var context:Context = _
+
+  override def setStartTime(value: Instant): Unit = startTime = value
+
+  override def getStartTime: Instant = startTime
+
+  override def setContext(ctx: Context): Unit = context = ctx
+
+  override def getContext: Context = context
 
   @Initializer
   def init(): Unit = context = Kamon.currentContext()
