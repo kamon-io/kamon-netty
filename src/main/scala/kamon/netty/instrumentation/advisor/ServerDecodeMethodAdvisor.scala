@@ -2,12 +2,11 @@ package kamon.netty.instrumentation
 package advisor
 
 import io.netty.channel.ChannelHandlerContext
-import io.netty.util.concurrent.EventExecutor
 import kamon.Kamon
 import kamon.netty.Netty
 import kamon.netty.instrumentation.mixin.ChannelContextAware
 import kamon.trace.Span
-import kanela.agent.libs.net.bytebuddy.asm.Advice.{Argument, OnMethodExit, This}
+import kanela.agent.libs.net.bytebuddy.asm.Advice.{Argument, OnMethodExit}
 
 class ServerDecodeMethodAdvisor
 object ServerDecodeMethodAdvisor {

@@ -34,7 +34,7 @@ class ServerBootstrapInstrumentation extends KanelaInstrumentation {
       .build()
   }
 
-  forTargetType("io.netty.bootstrap.ServerBootstrap.ServerBootstrapAcceptor") { builder =>
+  forTargetType("io.netty.bootstrap.ServerBootstrap$ServerBootstrapAcceptor") { builder =>
     builder
       .withAdvisorFor(method("channelRead").and(takesArguments(2)), classOf[ServerChannelReadMethodAdvisor])
       .build()
