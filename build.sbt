@@ -33,7 +33,7 @@ lazy val root = (project in file("."))
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "releases"))
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
   .settings(resolvers += Resolver.mavenLocal)
-  .settings(javaAgents += "io.kamon"    % "kanela-agent"   % "0.0.14"  % "compile;test")
+  .settings(javaAgents += "io.kamon"    % "kanela-agent-bundle"   % "0.0.14"  % "compile;test")
 //  .settings(javaAgents += "org.aspectj" % "aspectjweaver"  % "1.8.10"  % "compile;test;runtime")
   .settings(
     libraryDependencies ++=
