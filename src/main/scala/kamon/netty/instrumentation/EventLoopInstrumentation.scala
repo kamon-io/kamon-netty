@@ -1,6 +1,6 @@
 /*
  * =========================================================================================
- * Copyright © 2013-2017 the kamon project <http://kamon.io/>
+ * Copyright © 2013-2018 the kamon project <http://kamon.io/>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
  * except in compliance with the License. You may obtain a copy of the License at
@@ -41,28 +41,6 @@ class EventLoopInstrumentation extends KanelaInstrumentation {
       .withAdvisorFor(method("register"), classOf[EpollAddMethodAdvisor])
       .build()
   }
-
-//  @Around("execution(* io.netty.channel.SingleThreadEventLoop.register(..)) && this(eventLoop)")
-//  def onRegister(pjp: ProceedingJoinPoint, eventLoop: NioEventLoop): Any = {
-//    val future = pjp.proceed().asInstanceOf[ChannelFuture]
-//    val registeredChannels = Metrics.forEventLoop(name(eventLoop)).registeredChannels
-//
-//    if (future.isSuccess) registeredChannels.increment()
-//    else future.addListener(registeredChannelListener(registeredChannels))
-//    future
-//  }
-
-//  @Before("execution(* io.netty.channel.nio.NioEventLoop.cancel(..)) && this(eventLoop)")
-//  def onCancel(eventLoop: NioEventLoop): Unit = {
-//    val registeredChannels = Metrics.forEventLoop(name(eventLoop)).registeredChannels
-//    registeredChannels.decrement()
-//  }
-
-//  @Around("execution(* io.netty.channel.nio.NioEventLoop.newTaskQueue(..)) && this(eventLoop)")
-//  def onNewTaskQueue(pjp: ProceedingJoinPoint, eventLoop: NioEventLoop): Any = {
-//    val queue = pjp.proceed().asInstanceOf[util.Queue[Runnable]]
-//    MonitoredQueue(eventLoop, queue)
-//  }
 }
 
 

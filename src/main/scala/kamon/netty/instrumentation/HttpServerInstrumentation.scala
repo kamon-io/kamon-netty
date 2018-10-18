@@ -1,6 +1,6 @@
 /*
  * =========================================================================================
- * Copyright © 2013-2017 the kamon project <http://kamon.io/>
+ * Copyright © 2013-2018 the kamon project <http://kamon.io/>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
  * except in compliance with the License. You may obtain a copy of the License at
@@ -32,32 +32,4 @@ class HttpServerInstrumentation extends KanelaInstrumentation {
       .withAdvisorFor(method("encode").and(takesArguments(3)), classOf[ServerEncodeMethodAdvisor])
       .build()
   }
-
-//  @After("execution(* io.netty.handler.codec.http.HttpObjectDecoder+.decode(..)) && args(ctx, *, out)")
-//  def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[AnyRef]): Unit = {
-//    if (out.size() > 0 && out.get(0).isHttpRequest()) {
-//      val request = out.get(0).toHttpRequest()
-//      val channel = ctx.channel().toContextAware()
-//      val incomingContext = decodeContext(request)
-//      val serverSpan = Kamon.buildSpan(Netty.generateOperationName(request))
-//        .asChildOf(incomingContext.get(Span.ContextKey))
-//        .withStartTimestamp(channel.startTime)
-//        .withSpanTag("span.kind", "server")
-//        .withSpanTag("component", "netty")
-//        .withSpanTag("http.method", request.getMethod.name())
-//        .withSpanTag("http.url", request.getUri)
-//        .start()
-//
-//      channel.setContext(incomingContext.withKey(Span.ContextKey, serverSpan))
-//    }
-//  }
-//
-//  @Before("execution(* io.netty.handler.codec.http.HttpObjectEncoder+.encode(..)) && args(ctx, response, *)")
-//  def onEncodeResponse(ctx: ChannelHandlerContext, response:HttpResponse): Unit = {
-//    val serverSpan = ctx.channel().getContext().get(Span.ContextKey)
-//    if(isError(response.getStatus.code()))
-//      serverSpan.addSpanTag("error", value = true)
-//    serverSpan.finish()
-//  }
 }
-
