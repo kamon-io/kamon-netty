@@ -10,7 +10,7 @@ The `kamon-netty` module ships with bytecode instrumentation that brings automat
 Netty based applications and libraries.
 
 
-The <b>kamon-netty</b> module requires you to start your application using the AspectJ Weaver Agent. Kamon will warn you
+The <b>kamon-netty</b> module requires you to start your application using the [Kanela][1] Agent. Kamon will warn you
 at startup if you failed to do so.
 
 Kamon Netty is currently available for Scala 2.11 and 2.12.
@@ -19,12 +19,12 @@ Supported releases and dependencies are shown below.
 
 | kamon  | status | jdk  | scala            
 |:------:|:------:|:----:|------------------
-|  1.0.0 | experimental | 1.8+ | 2.11, 2.12
+|  1.x   | experimental | 1.8+ | 2.11, 2.12
 
 To get started with SBT, simply add the following to your `build.sbt` or `pom.xml`
 file:
 
-```scala
+```sbtshell
 libraryDependencies += "io.kamon" %% "kamon-netty" % "1.0.0"
 ```
 
@@ -52,6 +52,8 @@ The metrics that you will get for an __EventLoop__ are:
 ### Traces ###
 
 ![Image of Netty Metrics](/img/netty-jaeger.png)
+
+[1]: http://kamon-io.github.io/kanela/
 
 
 

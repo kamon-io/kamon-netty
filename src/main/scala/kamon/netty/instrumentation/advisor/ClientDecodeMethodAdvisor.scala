@@ -21,6 +21,9 @@ import io.netty.channel.ChannelHandlerContext
 import kamon.trace.Span
 import kanela.agent.libs.net.bytebuddy.asm.Advice.{Argument, OnMethodExit, Thrown}
 
+/**
+  * Advisor for io.netty.handler.codec.http.HttpClientCodec.Decoder::decode
+  */
 class ClientDecodeMethodAdvisor
 object ClientDecodeMethodAdvisor {
 

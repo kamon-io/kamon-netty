@@ -21,6 +21,9 @@ trait NamedEventLoopGroup {
   def getName: String
 }
 
+/**
+  * Mixin for io.netty.channel.EventLoopGroup
+  */
 class EventLoopMixin extends NamedEventLoopGroup {
   @volatile var _name: String = _
   override def setName(name: String): Unit = _name = name

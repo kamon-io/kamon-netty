@@ -20,6 +20,9 @@ import kamon.netty.instrumentation.ServerBootstrapInstrumentation.{BossGroupName
 import kamon.netty.instrumentation.mixin.NamedEventLoopGroup
 import kanela.agent.libs.net.bytebuddy.asm.Advice.{Argument, OnMethodEnter}
 
+/**
+  * Advisor for io.netty.bootstrap.ServerBootstrap::group
+  */
 class ServerGroupMethodAdvisor
 object ServerGroupMethodAdvisor {
 

@@ -21,12 +21,24 @@ import kanela.agent.scala.KanelaInstrumentation
 
 class HttpClientInstrumentation extends KanelaInstrumentation {
 
+  /**
+    * Instrument:
+    *
+    * io.netty.handler.codec.http.HttpClientCodec.Decoder::decode
+    *
+    */
   forTargetType("io.netty.handler.codec.http.HttpClientCodec$Decoder") { builder =>
     builder
       .withAdvisorFor(method("decode").and(takesArguments(3)), classOf[ClientDecodeMethodAdvisor])
       .build()
   }
 
+  /**
+    * Instrument:
+    *
+    * io.netty.handler.codec.http.HttpClientCodec.Encoder::encode
+    *
+    */
   forTargetType("io.netty.handler.codec.http.HttpClientCodec$Encoder") { builder =>
     builder
       .withAdvisorFor(method("encode").and(takesArguments(3)), classOf[ClientEncodeMethodAdvisor])

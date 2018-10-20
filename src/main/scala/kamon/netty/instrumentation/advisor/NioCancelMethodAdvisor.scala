@@ -21,6 +21,9 @@ import kamon.netty.Metrics
 import kamon.netty.util.EventLoopUtils.name
 import kanela.agent.libs.net.bytebuddy.asm.Advice.{OnMethodEnter, This}
 
+/**
+  * Advisor for io.netty.channel.nio.NioEventLoop::cancel
+  */
 class NioCancelMethodAdvisor
 object NioCancelMethodAdvisor {
 

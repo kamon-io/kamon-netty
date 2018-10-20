@@ -21,6 +21,13 @@ import kanela.agent.scala.KanelaInstrumentation
 
 class EventLoopInstrumentation extends KanelaInstrumentation {
 
+  /**
+    * Instrument:
+    *
+    * io.netty.channel.nio.NioEventLoop::cancel
+    * io.netty.channel.nio.NioEventLoop::newTaskQueue
+    *
+    */
   forTargetType("io.netty.channel.nio.NioEventLoop") { builder ⇒
     builder
       .withAdvisorFor(method("cancel"), classOf[NioCancelMethodAdvisor])
@@ -28,6 +35,14 @@ class EventLoopInstrumentation extends KanelaInstrumentation {
       .build()
   }
 
+  /**
+    * Instrument:
+    *
+    * io.netty.channel.epoll.EpollEventLoop::add
+    * io.netty.channel.epoll.EpollEventLoop::remove
+    * io.netty.channel.epoll.EpollEventLoop::newTaskQueue
+    *
+    */
   forTargetType("io.netty.channel.epoll.EpollEventLoop") { builder ⇒
     builder
       .withAdvisorFor(method("add"), classOf[EpollAddMethodAdvisor])
@@ -36,6 +51,12 @@ class EventLoopInstrumentation extends KanelaInstrumentation {
       .build()
   }
 
+  /**
+    * Instrument:
+    *
+    * io.netty.channel.SingleThreadEventLoop::register
+    *
+    */
   forTargetType("io.netty.channel.SingleThreadEventLoop") { builder ⇒
     builder
       .withAdvisorFor(method("register"), classOf[EpollAddMethodAdvisor])

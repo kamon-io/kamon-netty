@@ -28,7 +28,7 @@ trait RequestContextAware {
 
 
 /**
-  * --
+  * Mixin for io.netty.handler.codec.http.HttpMessage
   */
 class RequestContextAwareMixin extends RequestContextAware {
   @volatile var context: Context = _

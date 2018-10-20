@@ -22,6 +22,9 @@ import kamon.netty.Metrics
 import kamon.netty.util.EventLoopUtils.name
 import kanela.agent.libs.net.bytebuddy.asm.Advice.{Argument, OnMethodExit, This}
 
+/**
+  * Advisor for io.netty.channel.epoll.EpollEventLoop::remove
+  */
 class RemoveMethodAdvisor
 object RemoveMethodAdvisor {
 

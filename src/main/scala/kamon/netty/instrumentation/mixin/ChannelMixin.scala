@@ -31,7 +31,7 @@ trait ChannelContextAware {
 }
 
 /**
-  * --
+  * Mixin for io.netty.channel.Channel
   */
 class ChannelContextAwareMixin extends ChannelContextAware {
   @volatile var startTime: Instant = _

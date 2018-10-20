@@ -22,18 +22,36 @@ import kanela.agent.scala.KanelaInstrumentation
 
 class ServerBootstrapInstrumentation extends KanelaInstrumentation {
 
+  /**
+    * Mix:
+    *
+    * io.netty.channel.EventLoopGroup with kamon.netty.instrumentation.mixin.EventLoopMixin
+    *
+    */
   forSubtypeOf("io.netty.channel.EventLoopGroup") { builder =>
     builder
       .withMixin(classOf[EventLoopMixin])
       .build()
   }
 
+  /**
+    * Instrument:
+    *
+    * io.netty.bootstrap.ServerBootstrap::group
+    *
+    */
   forTargetType("io.netty.bootstrap.ServerBootstrap") { builder =>
     builder
       .withAdvisorFor(method("group").and(takesArguments(2)), classOf[ServerGroupMethodAdvisor])
       .build()
   }
 
+  /**
+    * Instrument:
+    *
+    * io.netty.bootstrap.ServerBootstrap.ServerBootstrapAcceptor::channelRead
+    *
+    */
   forTargetType("io.netty.bootstrap.ServerBootstrap$ServerBootstrapAcceptor") { builder =>
     builder
       .withAdvisorFor(method("channelRead").and(takesArguments(2)), classOf[ServerChannelReadMethodAdvisor])

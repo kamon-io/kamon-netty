@@ -21,6 +21,9 @@ import io.netty.channel.Channel
 import kamon.netty.instrumentation.ServerBootstrapInstrumentation.KamonHandler
 import kanela.agent.libs.net.bytebuddy.asm.Advice.{Argument, OnMethodExit}
 
+/**
+  * Advisor for io.netty.bootstrap.ServerBootstrap.ServerBootstrapAcceptor::channelRead
+  */
 class ServerChannelReadMethodAdvisor
 object ServerChannelReadMethodAdvisor {
 

@@ -21,6 +21,12 @@ import kanela.agent.scala.KanelaInstrumentation
 
 class ChannelInstrumentation extends KanelaInstrumentation {
 
+  /**
+    * Mix:
+    *
+    * io.netty.channel.Channel with kamon.netty.instrumentation.mixin.ChannelContextAwareMixin
+    *
+    */
   forSubtypeOf("io.netty.channel.Channel") { builder ⇒
     builder
       .withMixin(classOf[ChannelContextAwareMixin])

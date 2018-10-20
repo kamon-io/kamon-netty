@@ -21,12 +21,24 @@ import kanela.agent.scala.KanelaInstrumentation
 
 class HttpServerInstrumentation extends KanelaInstrumentation {
 
+  /**
+    * Instrument:
+    *
+    * io.netty.handler.codec.http.HttpObjectDecoder::decode
+    *
+    */
   forSubtypeOf("io.netty.handler.codec.http.HttpObjectDecoder") { builder =>
     builder
       .withAdvisorFor(method("decode").and(takesArguments(3)), classOf[ServerDecodeMethodAdvisor])
       .build()
   }
 
+  /**
+    * Instrument:
+    *
+    * io.netty.handler.codec.http.HttpObjectEncoder::encode
+    *
+    */
   forSubtypeOf("io.netty.handler.codec.http.HttpObjectEncoder") { builder =>
     builder
       .withAdvisorFor(method("encode").and(takesArguments(3)), classOf[ServerEncodeMethodAdvisor])

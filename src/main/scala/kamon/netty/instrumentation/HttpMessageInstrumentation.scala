@@ -21,6 +21,12 @@ import kanela.agent.scala.KanelaInstrumentation
 
 class HttpMessageInstrumentation extends KanelaInstrumentation {
 
+  /**
+    * Mix:
+    *
+    * io.netty.handler.codec.http.HttpMessage::encode with kamon.netty.instrumentation.mixin.RequestContextAwareMixin
+    *
+    */
   forSubtypeOf("io.netty.handler.codec.http.HttpMessage") { builder ⇒
     builder
       .withMixin(classOf[RequestContextAwareMixin])

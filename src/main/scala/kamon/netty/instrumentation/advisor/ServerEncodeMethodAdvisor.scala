@@ -20,6 +20,9 @@ package advisor
 import io.netty.channel.ChannelHandlerContext
 import kamon.trace.Span
 
+/**
+  * Advisor for io.netty.handler.codec.http.HttpObjectEncoder::encode
+  */
 class ServerEncodeMethodAdvisor
 object ServerEncodeMethodAdvisor {
   import kanela.agent.libs.net.bytebuddy.asm.Advice.{Argument, OnMethodEnter}

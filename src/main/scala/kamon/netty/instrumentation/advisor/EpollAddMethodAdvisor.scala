@@ -21,6 +21,10 @@ import kamon.netty.Metrics
 import kamon.netty.util.EventLoopUtils.name
 import kanela.agent.libs.net.bytebuddy.asm.Advice.{OnMethodExit, This}
 
+/**
+  * Advisor for io.netty.channel.epoll.EpollEventLoop::add
+  * Advisor for io.netty.channel.SingleThreadEventLoop::register
+  */
 class EpollAddMethodAdvisor
 object EpollAddMethodAdvisor {
 
