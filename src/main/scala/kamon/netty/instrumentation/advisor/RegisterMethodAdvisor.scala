@@ -23,9 +23,8 @@ import kamon.netty.util.EventLoopUtils.name
 import kanela.agent.libs.net.bytebuddy.asm.Advice.{OnMethodExit, Return, This}
 
 /**
-  * Advisor for -
+  * Advisor for io.netty.channel.SingleThreadEventLoop::register
   */
-// TODO
 class RegisterMethodAdvisor
 object RegisterMethodAdvisor {
 

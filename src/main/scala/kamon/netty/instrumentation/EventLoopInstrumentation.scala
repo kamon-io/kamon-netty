@@ -16,7 +16,7 @@
 
 package kamon.netty.instrumentation
 
-import kamon.netty.instrumentation.advisor.{EpollAddMethodAdvisor, NewTaskQueueMethodAdvisor, NioCancelMethodAdvisor, RemoveMethodAdvisor}
+import kamon.netty.instrumentation.advisor._
 import kanela.agent.scala.KanelaInstrumentation
 
 class EventLoopInstrumentation extends KanelaInstrumentation {
@@ -59,7 +59,7 @@ class EventLoopInstrumentation extends KanelaInstrumentation {
     */
   forTargetType("io.netty.channel.SingleThreadEventLoop") { builder ⇒
     builder
-      .withAdvisorFor(method("register"), classOf[EpollAddMethodAdvisor])
+      .withAdvisorFor(method("register"), classOf[RegisterMethodAdvisor])
       .build()
   }
 }
