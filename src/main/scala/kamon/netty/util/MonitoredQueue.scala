@@ -20,7 +20,7 @@ import java.util
 
 import io.netty.channel.EventLoop
 import kamon.Kamon
-import kamon.context.{Context, HasContext}
+import kamon.context.Context
 import kamon.netty.Metrics
 import kamon.netty.Metrics.EventLoopMetrics
 import kamon.netty.util.EventLoopUtils.name
@@ -68,14 +68,15 @@ object MonitoredQueue {
 
 }
 
-private[this] class TimedTask(underlying:Runnable)(implicit metrics: EventLoopMetrics) extends Runnable with HasContext {
+private[this] class TimedTask(underlying:Runnable)(implicit metrics: EventLoopMetrics) extends Runnable {
   val startTime:Long = Kamon.clock().nanos()
   val context: Context = Kamon.currentContext()
 
   override def run(): Unit =
-    Kamon.withContext(context) {
+    Kamon.runWithContext(context) {
       Latency.measure(metrics.taskProcessingTime)(underlying.run())
     }
 
   def timeInQueue: Long = Kamon.clock().nanos() - startTime
+
 }

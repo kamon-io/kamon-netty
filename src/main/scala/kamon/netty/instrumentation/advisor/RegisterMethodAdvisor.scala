@@ -22,14 +22,3 @@ object RegisterMethodAdvisor {
 
 
 }
-
-//object RegisterMethodAdvisorUtils {
-//
-//  val registeredChannelListener: MinMaxCounter  => ChannelFutureListener = registeredChannels => new ChannelFutureListener() {
-//    override def operationComplete(future: ChannelFuture): Unit = {
-//      if(future.isSuccess) {
-//        registeredChannels.increment()
-//      }
-//    }
-//  }
-//}

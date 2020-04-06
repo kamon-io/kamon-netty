@@ -21,35 +21,51 @@ import java.net.URI
 import com.typesafe.config.Config
 import io.netty.handler.codec.http.HttpRequest
 import kamon.Kamon
+import kamon.instrumentation.http.HttpMessage.Request
+import kamon.instrumentation.http.{HttpClientInstrumentation, HttpOperationNameGenerator, HttpServerInstrumentation}
 import kamon.util.DynamicAccess
 
 object Netty {
-  private var nameGenerator: NameGenerator = new DefaultNameGenerator()
+//  private var nameGenerator: NameGenerator = new PathOperationNameGenerator()
 
-  loadConfiguration(Kamon.config())
+//  loadConfiguration(Kamon.config())
 
-  def generateOperationName(request: HttpRequest): String =
-    nameGenerator.generateOperationName(request)
+//  def generateOperationName(request: HttpRequest): String =
+//    nameGenerator.generateOperationName(request)
 
-  def generateHttpClientOperationName(request: HttpRequest): String =
-    nameGenerator.generateHttpClientOperationName(request)
+//  def generateHttpClientOperationName(request: HttpRequest): String =
+//    nameGenerator.generateHttpClientOperationName(request)
 
-  Kamon.onReconfigure((newConfig: Config) => Netty.loadConfiguration(newConfig))
 
-  private def loadConfiguration(config: Config): Unit = synchronized {
+  val httpServerConfig = Kamon.config().getConfig("kamon.instrumentation.netty.server")
+  val httpClientConfig = Kamon.config().getConfig("kamon.instrumentation.netty.client")
+
+
+  val serverInstrumentation = HttpServerInstrumentation.from(httpServerConfig, "netty.server", "0.0.0.0", 8080)
+  val clientInstrumentation = HttpClientInstrumentation.from(httpClientConfig, "netty.client")
+
+//  Kamon.onReconfigure((newConfig: Config) => Netty.loadConfiguration(newConfig))
+
+//  private def loadConfiguration(config: Config): Unit = synchronized {
+//    val dynamic = new DynamicAccess(getClass.getClassLoader)
+//    val nameGeneratorFQCN = config.getString("kamon.netty.name-generator")
+//    nameGenerator = dynamic.createInstanceFor[NameGenerator](nameGeneratorFQCN, Nil)
+//  }
+//
+  @volatile var nameGenerator: HttpOperationNameGenerator = nameGeneratorFromConfig(Kamon.config())
+
+  private def nameGeneratorFromConfig(config: Config): HttpOperationNameGenerator = {
     val dynamic = new DynamicAccess(getClass.getClassLoader)
-    val nameGeneratorFQCN = config.getString("kamon.netty.name-generator")
-    nameGenerator = dynamic.createInstanceFor[NameGenerator](nameGeneratorFQCN, Nil).get
+    val nameGeneratorFQCN = config.getString("kamon.instrumentation.netty.client.tracing.operations.name-generator")
+    dynamic.createInstanceFor[HttpOperationNameGenerator](nameGeneratorFQCN, Nil)
+  }
+
+  Kamon.onReconfigure { newConfig =>
+    nameGenerator = nameGeneratorFromConfig(newConfig)
   }
 }
 
-trait NameGenerator {
-  def generateOperationName(request: HttpRequest): String
-  def generateHttpClientOperationName(request: HttpRequest): String
-}
-
-class DefaultNameGenerator extends NameGenerator {
-
+class DefaultNameGenerator extends HttpOperationNameGenerator {
   import java.util.Locale
 
   import scala.collection.concurrent.TrieMap
@@ -57,21 +73,22 @@ class DefaultNameGenerator extends NameGenerator {
   private val localCache = TrieMap.empty[String, String]
   private val normalizePattern = """\$([^<]+)<[^>]+>""".r
 
-  override def generateHttpClientOperationName(request: HttpRequest): String = {
-    val uri = new URI(request.getUri)
-    s"${uri.getAuthority}${uri.getPath}"
-  }
+//  override def generateHttpClientOperationName(request: HttpRequest): String = {
+//    val uri = new URI(request.getUri)
+//    s"${uri.getAuthority}${uri.getPath}"
+//  }
 
-  override def generateOperationName(request: HttpRequest): String = {
-    localCache.getOrElseUpdate(s"${request.getMethod.name()}${request.getUri}", {
-      // Convert paths of form GET /foo/bar/$paramname<regexp>/blah to foo.bar.paramname.blah.get
-      val uri = new URI(request.getUri())
-      val p = normalizePattern.replaceAllIn(uri.getPath, "$1").replace('/', '.').dropWhile(_ == '.')
-      val normalisedPath = {
-        if (p.lastOption.exists(_ != '.')) s"$p."
-        else p
-      }
-      s"$normalisedPath${request.getMethod.name().toLowerCase(Locale.ENGLISH)}"
-    })
+  def name(request: Request): Option[String] =  {
+    Some(
+      localCache.getOrElseUpdate(s"${request.method}${request.path}", {
+        // Convert paths of form GET /foo/bar/$paramname<regexp>/blah to foo.bar.paramname.blah.get
+        val p = normalizePattern.replaceAllIn(request.path, "$1").replace('/', '.').dropWhile(_ == '.')
+        val normalisedPath = {
+          if (p.lastOption.exists(_ != '.')) s"$p."
+          else p
+        }
+        s"$normalisedPath${request.method.toLowerCase(Locale.ENGLISH)}"
+      })
+    )
   }
 }

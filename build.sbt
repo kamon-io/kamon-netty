@@ -13,32 +13,34 @@
  * =========================================================================================
  */
 
-val kamonCore       = "io.kamon"        %% "kamon-core"                     % "1.1.3"
-val kamonTestkit    = "io.kamon"        %% "kamon-testkit"                  % "1.1.3"
-
-val scalaExtension  = "io.kamon"        %% "kanela-scala-extension"         % "0.0.14"
+val kamonCore         = "io.kamon"    %% "kamon-core"                     % "2.0.4"
+val kamonTestkit      = "io.kamon"    %% "kamon-testkit"                  % "2.0.4"
+val kamonCommon       = "io.kamon"    %% "kamon-instrumentation-common"   % "2.0.1"
+val kanela            = "io.kamon"    %  "kanela-agent"                   % "1.0.5"
+//val kamonExecutors    = "io.kamon"    %% "kamon-executors"                % "2.0.3"
 
 val netty           = "io.netty"        %  "netty-all"                      % "4.1.16.Final"
-val nettyNative     = "io.netty"        %  "netty-transport-native-epoll"   % "4.1.16.Final"    classifier "linux-x86_64"
+//val nettyNative     = "io.netty"        %  "netty-transport-native-epoll"   % "4.1.16.Final"    classifier "linux-x86_64"
 val logback         = "ch.qos.logback"  %  "logback-classic"                % "1.0.13"
 
 
 lazy val root = (project in file("."))
   .settings(Seq(
       name := "kamon-netty",
-      scalaVersion := "2.12.6",
-      crossScalaVersions := Seq("2.11.8", "2.12.6")))
+      scalaVersion := "2.12.10",
+      crossScalaVersions := Seq("2.12.10", "2.13.1")))
   .enablePlugins(JavaAgent)
+  .settings(instrumentationSettings)
   .settings(isSnapshot := true)
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "releases"))
   .settings(resolvers += Resolver.bintrayRepo("kamon-io", "snapshots"))
   .settings(resolvers += Resolver.mavenLocal)
-  .settings(javaAgents += "io.kamon"    % "kanela-agent-bundle"   % "0.0.14"  % "compile;test")
-//  .settings(javaAgents += "org.aspectj" % "aspectjweaver"  % "1.8.10"  % "compile;test;runtime")
+  .settings(javaAgents += "io.kamon"    % "kanela-agent"   % "1.0.5"  % "compile;test")
   .settings(
     libraryDependencies ++=
-      compileScope(kamonCore, scalaExtension) ++
-      providedScope(netty, nettyNative) ++
+      compileScope(kamonCore, kamonCommon) ++
+//      providedScope(netty, nettyNative, kanela) ++
+      providedScope(netty, kanela) ++
       testScope(scalatest, kamonTestkit, logbackClassic, logback))
 
 

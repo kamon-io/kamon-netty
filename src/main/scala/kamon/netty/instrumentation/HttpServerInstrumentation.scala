@@ -17,21 +17,15 @@
 package kamon.netty.instrumentation
 
 import kamon.netty.instrumentation.advisor.{ServerDecodeMethodAdvisor, ServerEncodeMethodAdvisor}
-import kanela.agent.scala.KanelaInstrumentation
+import kanela.agent.api.instrumentation.InstrumentationBuilder
 
-class HttpServerInstrumentation extends KanelaInstrumentation {
+class HttpServerInstrumentation extends InstrumentationBuilder {
 
-  forSubtypeOf("io.netty.handler.codec.http.HttpObjectDecoder") { builder =>
-    builder
-      .withAdvisorFor(method("decode").and(takesArguments(3)), classOf[ServerDecodeMethodAdvisor])
-      .build()
-  }
+  onSubTypesOf("io.netty.handler.codec.http.HttpObjectDecoder")
+    .advise(method("decode").and(takesArguments(3)), classOf[ServerDecodeMethodAdvisor])
 
-  forSubtypeOf("io.netty.handler.codec.http.HttpObjectEncoder") { builder =>
-    builder
-      .withAdvisorFor(method("encode").and(takesArguments(3)), classOf[ServerEncodeMethodAdvisor])
-      .build()
-  }
+  onSubTypesOf("io.netty.handler.codec.http.HttpObjectEncoder")
+    .advise(method("encode").and(takesArguments(3)), classOf[ServerEncodeMethodAdvisor])
 
 //  @After("execution(* io.netty.handler.codec.http.HttpObjectDecoder+.decode(..)) && args(ctx, *, out)")
 //  def onDecodeRequest(ctx: ChannelHandlerContext,  out:java.util.List[AnyRef]): Unit = {

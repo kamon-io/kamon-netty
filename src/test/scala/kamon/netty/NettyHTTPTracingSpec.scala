@@ -16,52 +16,42 @@
 
 package kamon.netty
 
-import io.netty.buffer.PoolThreadCache
-import io.netty.util.internal.logging.{InternalLogger, InternalLoggerFactory}
 import kamon.Kamon
 import kamon.context.Context
 import kamon.netty.Clients.withNioClient
 import kamon.netty.Servers.withNioServer
-import kamon.testkit.{MetricInspection, Reconfigure, TestSpanReporter}
+import kamon.testkit.{MetricInspection, SpanInspection, TestSpanReporter}
 import kamon.trace.Span
-import kamon.trace.Span.TagValue
-import kamon.util.Registration
 import org.scalatest._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.SpanSugar._
 
-class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection with Eventually
-  with Reconfigure with BeforeAndAfterAll with OptionValues {
+class NettyHTTPTracingSpec extends WordSpec
+  with Matchers
+  with MetricInspection.Syntax
+  with Eventually
+  with SpanInspection
+  with TestSpanReporter
+  with  OptionValues {
 
-  private val logger = InternalLoggerFactory.getInstance(this.getClass)
-  var count = 0
   "The Netty HTTP span propagation" should {
     "propagate the span from the client to the server" in {
       withNioServer(9001) { port =>
         withNioClient(port) { httpClient =>
-          val clientSpan =  Kamon.buildSpan("test-span").start()
-          Kamon.withContext(Context.create(Span.ContextKey, clientSpan)) {
+          val clientSpan =  Kamon.spanBuilder("test-span").start()
+          Kamon.runWithContext(Context.of(Span.Key, clientSpan)) {
             val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
             httpClient.execute(httpGet)
 
             eventually(timeout(5 seconds)) {
-              count += 1
-              logger.info(s"************************************* [$count] |_ ZERO Span")
-              val serverFinishedSpan = reporter.nextSpan().value
-              logger.info(s"************************************* [$count] |. First Span - server | ${logFinishedSpan(serverFinishedSpan)}")
-              val clientFinishedSpan = reporter.nextSpan().value
-              logger.info(s"************************************* [$count] |. Second Span - client | ${logFinishedSpan(clientFinishedSpan)}")
+              val serverSpan = testSpanReporter().nextSpan().value
+              val clientSpan = testSpanReporter.nextSpan().value
 
-              serverFinishedSpan.operationName shouldBe "route.get"
-              serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
+              serverSpan.operationName shouldBe "route.get"
+              serverSpan.kind shouldBe Span.Kind.Server
 
-              clientFinishedSpan.operationName shouldBe s"localhost:$port/route"
-              clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
-
-              serverFinishedSpan.context.traceID shouldBe clientFinishedSpan.context.traceID
-              serverFinishedSpan.context.parentID shouldBe clientFinishedSpan.context.spanID
-
-              reporter.nextSpan() shouldBe empty
+              clientSpan.operationName shouldBe "/route"
+              clientSpan.kind shouldBe Span.Kind.Client
             }
           }
         }
@@ -71,33 +61,21 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
     "contain a span error when an internal server error(500) occurs" in {
       withNioServer(9002) { port =>
         withNioClient(port) { httpClient =>
-          val clientSpan =  Kamon.buildSpan("test-span-with-error").start()
-          Kamon.withContext(Context.create(Span.ContextKey, clientSpan)) {
+          val clientSpan =  Kamon.spanBuilder("test-span-with-error").start()
+          Kamon.runWithContext(Context.of(Span.Key, clientSpan)) {
             val httpGet = httpClient.get(s"http://localhost:$port/error")
             httpClient.execute(httpGet)
 
 
             eventually(timeout(5 seconds)) {
-              count += 1
-              logger.info(s"************************************* [$count] |_ ZERO Span")
-              val serverFinishedSpan = reporter.nextSpan().value
-              logger.info(s"************************************* [$count] |- First Span - server | ${logFinishedSpan(serverFinishedSpan)}")
-              val clientFinishedSpan = reporter.nextSpan().value
-              logger.info(s"************************************* [$count] |- Second Span - client | ${logFinishedSpan(clientFinishedSpan)}")
+              val serverSpan = testSpanReporter().nextSpan().value
+              val clientSpan = testSpanReporter.nextSpan().value
 
-              serverFinishedSpan.operationName shouldBe "error.get"
-              serverFinishedSpan.tags should contain allOf("span.kind" -> TagValue.String("server"), "error" -> TagValue.True)
+              serverSpan.operationName shouldBe "error.get"
+              serverSpan.kind shouldBe Span.Kind.Server
 
-              clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
-              clientFinishedSpan.operationName shouldBe s"localhost:$port/error"
-
-              serverFinishedSpan.context.parentID shouldBe clientFinishedSpan.context.spanID
-              clientFinishedSpan.context.parentID shouldBe clientSpan.context.spanID
-
-              serverFinishedSpan.context.traceID shouldBe clientFinishedSpan.context.traceID
-              serverFinishedSpan.context.parentID shouldBe clientFinishedSpan.context.spanID
-
-              reporter.nextSpan() shouldBe empty
+              clientSpan.operationName shouldBe "/error"
+              clientSpan.kind shouldBe Span.Kind.Client
             }
           }
         }
@@ -107,29 +85,20 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
     "propagate the span from the client to the server with chunk-encoded request" in {
       withNioServer(9003) { port =>
         withNioClient(port) { httpClient =>
-          val clientSpan = Kamon.buildSpan("client-chunk-span").start()
-          Kamon.withContext(Context.create(Span.ContextKey, clientSpan)) {
+          val clientSpan = Kamon.spanBuilder("client-chunk-span").start()
+          Kamon.runWithContext(Context.of(Span.Key, clientSpan)) {
             val (httpPost, chunks) = httpClient.postWithChunks(s"http://localhost:$port/fetch-in-chunks-request", "test 1", "test 2")
             httpClient.executeWithContent(httpPost, chunks)
 
             eventually(timeout(5 seconds)) {
-              count += 1
-              logger.info(s"************************************* [$count] |_ ZERO Span")
-              val serverFinishedSpan = reporter.nextSpan().value
-              logger.info(s"************************************* [$count] || First Span - server | ${logFinishedSpan(serverFinishedSpan)}")
-              val clientFinishedSpan = reporter.nextSpan().value
-              logger.info(s"************************************* [$count] || Second Span - client | ${logFinishedSpan(clientFinishedSpan)}")
+              val serverSpan = testSpanReporter().nextSpan().value
+              val clientSpan = testSpanReporter.nextSpan().value
 
-              serverFinishedSpan.operationName shouldBe "fetch-in-chunks-request.post"
-              serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
+              serverSpan.operationName shouldBe "fetch-in-chunks-request.post"
+              serverSpan.kind shouldBe Span.Kind.Server
 
-              clientFinishedSpan.operationName shouldBe s"localhost:$port/fetch-in-chunks-request"
-              clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
-
-              serverFinishedSpan.context.parentID shouldBe clientFinishedSpan.context.spanID
-              clientFinishedSpan.context.parentID shouldBe clientSpan.context.spanID
-
-              reporter.nextSpan() shouldBe empty
+              clientSpan.operationName shouldBe s"/fetch-in-chunks-request"
+              clientSpan.kind shouldBe Span.Kind.Client
             }
           }
         }
@@ -139,29 +108,20 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
     "propagate the span from the client to the server with chunk-encoded response" in {
       withNioServer(9004) { port =>
         withNioClient(port) { httpClient =>
-          val clientSpan = Kamon.buildSpan("client-chunk-span").start()
-          Kamon.withContext(Context.create(Span.ContextKey, clientSpan)) {
+          val clientSpan = Kamon.spanBuilder("client-chunk-span").start()
+          Kamon.runWithContext(Context.of(Span.Key, clientSpan)) {
             val (httpPost, chunks) = httpClient.postWithChunks(s"http://localhost:$port/fetch-in-chunks-response", "test 1", "test 2")
             httpClient.executeWithContent(httpPost, chunks)
 
             eventually(timeout(5 seconds)) {
-              count += 1
-              logger.info(s"************************************* [$count] |_ ZERO Span")
-              val serverFinishedSpan = reporter.nextSpan().value
-              logger.info(s"************************************* [$count] |* First Span - server | ${logFinishedSpan(serverFinishedSpan)}")
-              val clientFinishedSpan = reporter.nextSpan().value
-              logger.info(s"************************************* [$count] |* Second Span - client | ${logFinishedSpan(clientFinishedSpan)}")
+              val serverSpan = testSpanReporter().nextSpan().value
+              val clientSpan = testSpanReporter.nextSpan().value
 
-              serverFinishedSpan.operationName shouldBe "fetch-in-chunks-response.post"
-              serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
+              serverSpan.operationName shouldBe "fetch-in-chunks-response.post"
+              serverSpan.kind shouldBe Span.Kind.Server
 
-              clientFinishedSpan.operationName shouldBe s"localhost:$port/fetch-in-chunks-response"
-              clientFinishedSpan.tags should contain ("span.kind" -> TagValue.String("client"))
-
-              serverFinishedSpan.context.parentID shouldBe clientFinishedSpan.context.spanID
-              clientFinishedSpan.context.parentID shouldBe clientSpan.context.spanID
-
-              reporter.nextSpan() shouldBe empty
+              clientSpan.operationName shouldBe s"/fetch-in-chunks-response"
+              clientSpan.kind shouldBe Span.Kind.Client
             }
           }
         }
@@ -175,17 +135,10 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
           httpClient.execute(httpGet)
 
           eventually(timeout(5 seconds)) {
-            count += 1
-            logger.info(s"************************************* [$count] |; ZERO Span")
-            val serverFinishedSpan = reporter.nextSpan().value
-            logger.info(s"************************************* [$count] |; First Span - server | ${logFinishedSpan(serverFinishedSpan)}")
+            val serverSpan = testSpanReporter().nextSpan().value
 
-            serverFinishedSpan.operationName shouldBe "route.get"
-            serverFinishedSpan.tags should contain ("span.kind" -> TagValue.String("server"))
-
-            serverFinishedSpan.context.parentID.string shouldBe ""
-
-            reporter.nextSpan() shouldBe empty
+            serverSpan.operationName shouldBe "route.get"
+            serverSpan.kind shouldBe Span.Kind.Server
           }
         }
       }
@@ -194,67 +147,27 @@ class NettyHTTPTracingSpec extends WordSpec with Matchers with MetricInspection 
     "create a new span for each request" in {
       withNioServer(9006) { port =>
         withNioClient(port) { httpClient =>
-          val clientSpan =  Kamon.buildSpan("test-span").start()
-          Kamon.withContext(Context.create(Span.ContextKey, clientSpan)) {
+          val clientSpan =  Kamon.spanBuilder("test-span").start()
+          Kamon.runWithContext(Context.of(Span.Key, clientSpan)) {
             httpClient.execute(httpClient.get(s"http://localhost:$port/route?param=123"))
             httpClient.execute(httpClient.get(s"http://localhost:$port/route?param=123"))
 
-            eventually(timeout(5 seconds)) {
-              count +=1
-              logger.info(s"************************************* [$count] |_ ZERO Span")
-              val serverFinishedSpan1 = reporter.nextSpan().value
-              logger.info(s"************************************* [$count] | First Span - server | ${logFinishedSpan(serverFinishedSpan1)}")
-              val clientFinishedSpan1 = reporter.nextSpan().value
-              logger.info(s"************************************* [$count] | First Span - client | ${logFinishedSpan(clientFinishedSpan1)}")
-              val serverFinishedSpan2 = reporter.nextSpan().value
-              logger.info(s"************************************* [$count] | Second Span - server | ${logFinishedSpan(serverFinishedSpan2)}")
-              val clientFinishedSpan2 = reporter.nextSpan().value
-              logger.info(s"************************************* [$count] | Second Span - client | ${logFinishedSpan(clientFinishedSpan2)}")
+            eventually(timeout(10 seconds)) {
+              val serverSpan = testSpanReporter().nextSpan().value
+              val clientSpan = testSpanReporter.nextSpan().value
 
-              serverFinishedSpan1.operationName shouldBe "route.get"
-              serverFinishedSpan1.tags should contain ("span.kind" -> TagValue.String("server"))
+              serverSpan.operationName shouldBe "route.get"
+              serverSpan.kind shouldBe Span.Kind.Server
 
-              clientFinishedSpan1.operationName shouldBe s"localhost:$port/route"
-              clientFinishedSpan1.tags should contain ("span.kind" -> TagValue.String("client"))
+              clientSpan.operationName shouldBe "/route"
+              clientSpan.kind shouldBe Span.Kind.Client
 
-              serverFinishedSpan1.context.traceID shouldBe clientFinishedSpan1.context.traceID
-              serverFinishedSpan1.context.parentID shouldBe clientFinishedSpan1.context.spanID
+              serverSpan.trace.id shouldBe clientSpan.trace.id
 
-              serverFinishedSpan2.operationName shouldBe "route.get"
-              serverFinishedSpan2.tags should contain ("span.kind" -> TagValue.String("server"))
-
-              clientFinishedSpan2.operationName shouldBe s"localhost:$port/route"
-              clientFinishedSpan2.tags should contain ("span.kind" -> TagValue.String("client"))
-
-              serverFinishedSpan2.context.traceID shouldBe clientFinishedSpan2.context.traceID
-              serverFinishedSpan2.context.parentID shouldBe clientFinishedSpan2.context.spanID
-
-              clientFinishedSpan1.context.parentID shouldBe clientFinishedSpan2.context.parentID
-
-              clientFinishedSpan1.context.parentID shouldBe clientSpan.context.spanID
-
-              reporter.nextSpan() shouldBe empty
             }
           }
         }
       }
     }
-  }
-
-  @volatile var registration: Registration = _
-  val reporter = new TestSpanReporter()
-
-  override protected def beforeAll(): Unit = {
-    enableFastSpanFlushing()
-    sampleAlways()
-    registration = Kamon.addReporter(reporter)
-  }
-
-  override protected def afterAll(): Unit = {
-    registration.cancel()
-  }
-
-  def logFinishedSpan(span: Span.FinishedSpan): String = {
-    s"[OperationName=${span.operationName}][Kind=${span.tags.get("span.kind")}][parentID=${span.context.parentID}]"
   }
 }

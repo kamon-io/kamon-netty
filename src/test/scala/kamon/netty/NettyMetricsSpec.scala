@@ -19,10 +19,10 @@ package kamon.netty
 import kamon.netty.Clients.withNioClient
 import kamon.netty.Metrics.{registeredChannelsMetric, taskProcessingTimeMetric, taskQueueSizeMetric, taskWaitingTimeMetric}
 import kamon.netty.Servers.{withEpollServer, withNioServer}
-import kamon.testkit.MetricInspection
+import kamon.testkit.{InstrumentInspection, MetricInspection}
 import org.scalatest.{Matchers, WordSpec}
 
-class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
+class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection.Syntax with InstrumentInspection.Syntax  {
 
   "The NettyMetrics" should {
 
@@ -32,10 +32,10 @@ class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
           val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
           httpClient.execute(httpGet)
 
-          registeredChannelsMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-nio-event-loop", "worker-group-nio-event-loop")
-          taskProcessingTimeMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-nio-event-loop", "worker-group-nio-event-loop")
-          taskQueueSizeMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-nio-event-loop", "worker-group-nio-event-loop")
-          taskWaitingTimeMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-nio-event-loop", "worker-group-nio-event-loop")
+          registeredChannelsMetric.tagValues("name") should contain atLeastOneOf("boss-group-nio-event-loop", "worker-group-nio-event-loop")
+          taskProcessingTimeMetric.tagValues("name") should contain atLeastOneOf("boss-group-nio-event-loop", "worker-group-nio-event-loop")
+          taskQueueSizeMetric.tagValues("name") should contain atLeastOneOf("boss-group-nio-event-loop", "worker-group-nio-event-loop")
+          taskWaitingTimeMetric.tagValues("name") should contain atLeastOneOf("boss-group-nio-event-loop", "worker-group-nio-event-loop")
         }
       }
     }
@@ -46,10 +46,10 @@ class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
           val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
           httpClient.execute(httpGet)
 
-          registeredChannelsMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-epoll-event-loop", "worker-group-epoll-event-loop")
-          taskProcessingTimeMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-epoll-event-loop", "worker-group-epoll-event-loop")
-          taskQueueSizeMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-epoll-event-loop", "worker-group-epoll-event-loop")
-          taskWaitingTimeMetric.valuesForTag("name") should contain atLeastOneOf("boss-group-epoll-event-loop", "worker-group-epoll-event-loop")
+          registeredChannelsMetric.tagValues("name") should contain atLeastOneOf("boss-group-epoll-event-loop", "worker-group-epoll-event-loop")
+          taskProcessingTimeMetric.tagValues("name") should contain atLeastOneOf("boss-group-epoll-event-loop", "worker-group-epoll-event-loop")
+          taskQueueSizeMetric.tagValues("name") should contain atLeastOneOf("boss-group-epoll-event-loop", "worker-group-epoll-event-loop")
+          taskWaitingTimeMetric.tagValues("name") should contain atLeastOneOf("boss-group-epoll-event-loop", "worker-group-epoll-event-loop")
         }
       }
     }
@@ -59,9 +59,9 @@ class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
         withNioClient(port) { httpClient =>
           val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
           val response = httpClient.execute(httpGet)
-          response.getStatus.code() should be(200)
+          response.status.code() should be(200)
 
-          registeredChannelsMetric.valuesForTag("name") should contain("boss-group-nio-event-loop")
+          registeredChannelsMetric.tagValues("name") should contain("boss-group-nio-event-loop")
 
           val metrics = Metrics.forEventLoop("boss-group-nio-event-loop")
 
@@ -78,9 +78,9 @@ class NettyMetricsSpec extends WordSpec with Matchers with MetricInspection  {
         withNioClient(port) { httpClient =>
           val httpGet = httpClient.get(s"http://localhost:$port/route?param=123")
           val response = httpClient.execute(httpGet)
-          response.getStatus.code() should be(200)
+          response.status.code() should be(200)
 
-          registeredChannelsMetric.valuesForTag("name") should contain("boss-group-epoll-event-loop")
+          registeredChannelsMetric.tagValues("name") should contain("boss-group-epoll-event-loop")
 
           val metrics = Metrics.forEventLoop("boss-group-epoll-event-loop")
 

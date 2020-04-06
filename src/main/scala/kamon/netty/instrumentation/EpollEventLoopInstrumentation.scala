@@ -16,18 +16,16 @@
 
 package kamon.netty.instrumentation
 
-import kanela.agent.scala.KanelaInstrumentation
+import kamon.netty.instrumentation.advisor.{EpollAddMethodAdvisor, NewTaskQueueMethodAdvisor, RemoveMethodAdvisor}
+import kanela.agent.api.instrumentation.InstrumentationBuilder
 
 
-class EpollEventLoopInstrumentation extends KanelaInstrumentation {
+class EpollEventLoopInstrumentation extends InstrumentationBuilder {
 //
-//  forTargetType("io.netty.channel.epoll.EpollEventLoop") { builder ⇒
-//    builder
-//      .withAdvisorFor(named("add"), classOf[EpollAddMethodAdvisor])
-//      .withAdvisorFor(named("remove"), classOf[RemoveMethodAdvisor])
-//      .withAdvisorFor(named("newTaskQueue"), classOf[NewTaskQueueMethodAdvisor])
-//      .build()
-//  }
+//  onType("io.netty.channel.epoll.EpollEventLoop")
+//      .advise(method("add"), classOf[EpollAddMethodAdvisor])
+//      .advise(method("remove"), classOf[RemoveMethodAdvisor])
+//      .advise(method("newTaskQueue"), classOf[NewTaskQueueMethodAdvisor])
 
 //  @After("execution(* io.netty.channel.epoll.EpollEventLoop.add(..)) && this(eventLoop)")
 //  def onAdd(eventLoop: EventExecutor): Unit =

@@ -17,30 +17,21 @@
 package kamon.netty.instrumentation
 
 import kamon.netty.instrumentation.advisor.{EpollAddMethodAdvisor, NewTaskQueueMethodAdvisor, NioCancelMethodAdvisor, RemoveMethodAdvisor}
-import kanela.agent.scala.KanelaInstrumentation
+import kanela.agent.api.instrumentation.InstrumentationBuilder
 
-class EventLoopInstrumentation extends KanelaInstrumentation {
+class EventLoopInstrumentation extends InstrumentationBuilder {
 
-  forTargetType("io.netty.channel.nio.NioEventLoop") { builder ⇒
-    builder
-      .withAdvisorFor(method("cancel"), classOf[NioCancelMethodAdvisor])
-      .withAdvisorFor(method("newTaskQueue"), classOf[NewTaskQueueMethodAdvisor])
-      .build()
-  }
+  onType("io.netty.channel.nio.NioEventLoop")
+      .advise(method("cancel"), classOf[NioCancelMethodAdvisor])
+      .advise(method("newTaskQueue"), classOf[NewTaskQueueMethodAdvisor])
 
-  forTargetType("io.netty.channel.epoll.EpollEventLoop") { builder ⇒
-    builder
-      .withAdvisorFor(method("add"), classOf[EpollAddMethodAdvisor])
-      .withAdvisorFor(method("remove"), classOf[RemoveMethodAdvisor])
-      .withAdvisorFor(method("newTaskQueue"), classOf[NewTaskQueueMethodAdvisor])
-      .build()
-  }
+  onType("io.netty.channel.epoll.EpollEventLoop")
+      .advise(method("add"), classOf[EpollAddMethodAdvisor])
+      .advise(method("remove"), classOf[RemoveMethodAdvisor])
+      .advise(method("newTaskQueue"), classOf[NewTaskQueueMethodAdvisor])
 
-  forTargetType("io.netty.channel.SingleThreadEventLoop") { builder ⇒
-    builder
-      .withAdvisorFor(method("register"), classOf[EpollAddMethodAdvisor])
-      .build()
-  }
+  onType("io.netty.channel.SingleThreadEventLoop")
+      .advise(method("register"), classOf[EpollAddMethodAdvisor])
 
 //  @Around("execution(* io.netty.channel.SingleThreadEventLoop.register(..)) && this(eventLoop)")
 //  def onRegister(pjp: ProceedingJoinPoint, eventLoop: NioEventLoop): Any = {

@@ -20,14 +20,20 @@ import java.time.Instant
 
 import kamon.Kamon
 import kamon.context.Context
+import kamon.instrumentation.http.HttpClientInstrumentation
+import kamon.instrumentation.http.HttpServerInstrumentation.RequestHandler
 import kanela.agent.api.instrumentation.mixin.Initializer
 
 
 trait ChannelContextAware {
+  def setClientHandler(handler: HttpClientInstrumentation.RequestHandler[_])
+  def getClientHandler: HttpClientInstrumentation.RequestHandler[_]
   def setStartTime(value: Instant): Unit
   def getStartTime: Instant
   def setContext(ctx: Context):Unit
   def getContext: Context
+  def setHandler(handler:RequestHandler)
+  def getHandler:RequestHandler
 }
 
 /**
@@ -36,6 +42,8 @@ trait ChannelContextAware {
 class ChannelContextAwareMixin extends ChannelContextAware {
   @volatile var startTime: Instant = _
   @volatile var context:Context = _
+  @volatile var serverHandler:RequestHandler = _
+  @volatile var clientHandler:HttpClientInstrumentation.RequestHandler[_] = _
 
   override def setStartTime(value: Instant): Unit = startTime = value
 
@@ -45,6 +53,15 @@ class ChannelContextAwareMixin extends ChannelContextAware {
 
   override def getContext: Context = context
 
+  override def setHandler(handler: RequestHandler): Unit = serverHandler = handler
+
+  override def getHandler: RequestHandler = serverHandler
+
+  override def setClientHandler(handler: HttpClientInstrumentation.RequestHandler[_]): Unit = clientHandler = handler
+
+  override def getClientHandler: HttpClientInstrumentation.RequestHandler[_] = clientHandler
+
   @Initializer
   def init(): Unit = context = Kamon.currentContext()
+
 }

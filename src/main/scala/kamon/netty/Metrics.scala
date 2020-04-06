@@ -19,6 +19,7 @@ package kamon.netty
 import kamon.Kamon
 import kamon.metric.MeasurementUnit._
 import kamon.metric._
+import kamon.tag.TagSet
 
 
 object Metrics {
@@ -41,10 +42,10 @@ object Metrics {
     val eventLoopTags = Map("name" -> name)
     EventLoopMetrics(
       eventLoopTags,
-      registeredChannelsMetric.refine(eventLoopTags),
-      taskProcessingTimeMetric.refine(eventLoopTags),
-      taskQueueSizeMetric.refine(eventLoopTags),
-      taskWaitingTimeMetric.refine(eventLoopTags)
+      registeredChannelsMetric.withTags(TagSet.from(eventLoopTags)),
+      taskProcessingTimeMetric.withTags(TagSet.from(eventLoopTags)),
+      taskQueueSizeMetric.withTags(TagSet.from(eventLoopTags)),
+      taskWaitingTimeMetric.withTags(TagSet.from(eventLoopTags))
     )
   }
 
@@ -52,13 +53,5 @@ object Metrics {
                               registeredChannels: RangeSampler,
                               taskProcessingTime: Histogram,
                               taskQueueSize: RangeSampler,
-                              taskWaitingTime: Histogram) {
-
-    def cleanup(): Unit = {
-      registeredChannelsMetric.remove(tags)
-      taskProcessingTimeMetric.remove(tags)
-      taskQueueSizeMetric.remove(tags)
-      taskWaitingTimeMetric.remove(tags)
-    }
-  }
+                              taskWaitingTime: Histogram)
 }

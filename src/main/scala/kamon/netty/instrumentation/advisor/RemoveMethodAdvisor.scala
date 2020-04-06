@@ -14,5 +14,4 @@ object RemoveMethodAdvisor {
     if(channel.asInstanceOf[Channel].isOpen)
       Metrics.forEventLoop(name(eventLoop)).registeredChannels.decrement()
   }
-
 }

@@ -14,5 +14,4 @@ object ServerChannelReadMethodAdvisor {
     if(pipeline.get(KamonHandler) == null)
       pipeline.addFirst(KamonHandler, new KamonHandlerPortable.KamonHandler())
   }
-
 }

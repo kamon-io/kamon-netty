@@ -18,27 +18,18 @@ package kamon.netty.instrumentation
 
 import kamon.netty.instrumentation.advisor.{ServerChannelReadMethodAdvisor, ServerGroupMethodAdvisor}
 import kamon.netty.instrumentation.mixin.EventLoopMixin
-import kanela.agent.scala.KanelaInstrumentation
+import kanela.agent.api.instrumentation.InstrumentationBuilder
 
-class ServerBootstrapInstrumentation extends KanelaInstrumentation {
+class ServerBootstrapInstrumentation extends InstrumentationBuilder {
 
-  forSubtypeOf("io.netty.channel.EventLoopGroup") { builder =>
-    builder
-      .withMixin(classOf[EventLoopMixin])
-      .build()
-  }
+  onSubTypesOf("io.netty.channel.EventLoopGroup")
+    .mixin(classOf[EventLoopMixin])
 
-  forTargetType("io.netty.bootstrap.ServerBootstrap") { builder =>
-    builder
-      .withAdvisorFor(method("group").and(takesArguments(2)), classOf[ServerGroupMethodAdvisor])
-      .build()
-  }
+  onType("io.netty.bootstrap.ServerBootstrap")
+    .advise(method("group").and(takesArguments(2)), classOf[ServerGroupMethodAdvisor])
 
-  forTargetType("io.netty.bootstrap.ServerBootstrap$ServerBootstrapAcceptor") { builder =>
-    builder
-      .withAdvisorFor(method("channelRead").and(takesArguments(2)), classOf[ServerChannelReadMethodAdvisor])
-      .build()
-  }
+  onType("io.netty.bootstrap.ServerBootstrap$ServerBootstrapAcceptor")
+    .advise(method("channelRead").and(takesArguments(2)), classOf[ServerChannelReadMethodAdvisor])
 
 //  @Before("execution(* io.netty.bootstrap.ServerBootstrap.group(..)) && args(bossGroup, workerGroup)")
 //  def onNewServerBootstrap(bossGroup:NamedEventLoopGroup, workerGroup:NamedEventLoopGroup):Unit = {

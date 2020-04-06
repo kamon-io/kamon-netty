@@ -1,32 +1,80 @@
 package kamon.netty.instrumentation
 
+import java.net.URI
+
 import io.netty.channel.{ChannelHandler, ChannelHandlerContext, ChannelInboundHandlerAdapter}
 import io.netty.handler.codec.http.HttpRequest
 import kamon.Kamon
+import kamon.instrumentation.http.HttpMessage
 import kamon.netty.Netty
-import kamon.trace.Span
 
 object HttpRequestContext {
 
   def withContext(request: HttpRequest, ctx: ChannelHandlerContext): HttpRequest = {
     val currentContext = request.getContext()
-    val clientSpan = currentContext.get(Span.ContextKey)
-    if (clientSpan.nonEmpty()) {
-      val clientRequestSpan = Kamon.buildSpan(Netty.generateHttpClientOperationName(request))
-        .asChildOf(clientSpan)
-        .withTag("span.kind", "client")
-        .withTag("component", "netty")
-        .withTag("http.method", request.getMethod.name())
-        .withTag("http.url", request.getUri)
-        .start()
+    val handler = Netty.clientInstrumentation.createHandler(toRequestBuilder(request), currentContext)
 
-      val newContext = currentContext.withKey(Span.ContextKey, clientRequestSpan)
+    ctx.channel().toContextAware().setClientHandler(handler)
 
-      ctx.channel().toContextAware().setContext(newContext)
 
-      encodeContext(newContext, request)
-    } else request
-  }
+//    val clientSpan = currentContext.get(Span.ContextKey)
+//    if (clientSpan.nonEmpty()) {
+//      val clientRequestSpan = Kamon.buildSpan(Netty.generateHttpClientOperationName(request))
+//        .asChildOf(clientSpan)
+//        .withTag("span.kind", "client")
+//        .withTag("component", "netty")
+//        .withTag("http.method", request.getMethod.name())
+//        .withTag("http.url", request.getUri)
+//        .start()
+//
+//      val newContext = currentContext.withKey(Span.ContextKey, clientRequestSpan)
+
+//      ctx.channel().toContextAware().setContext(newContext)
+
+//      encodeContext(newContext, request)
+    request
+
+    }
+
+
+  private def toRequestBuilder(request: HttpRequest): HttpMessage.RequestBuilder[HttpRequest] =
+    new HttpMessage.RequestBuilder[HttpRequest] {
+
+      val uri = new URI(request.uri())
+
+      import scala.collection.JavaConverters._
+
+      private var _newHttpHeaders: List[(String, String)] = List.empty
+
+      override def write(header: String, value: String): Unit =
+        _newHttpHeaders = (header -> value) :: _newHttpHeaders
+
+      override def build(): HttpRequest = {
+        _newHttpHeaders.foreach{ case(key, value) => request.headers().add(key, value)}
+        request
+      }
+
+      override def read(header: String): Option[String] =
+        Option(request.headers().get(header))
+
+      override def readAll(): Map[String, String] =
+        request.headers.asScala.map(m => (m.getKey, m.getValue)).toMap
+
+      override def url: String =
+        uri.toURL.toString
+
+      override def path: String =
+        uri.getPath
+
+      override def method: String =
+        request.method().name()
+
+      override def host: String =
+        uri.getHost
+
+      override def port: Int =
+        uri.getPort
+    }
 
 }
 

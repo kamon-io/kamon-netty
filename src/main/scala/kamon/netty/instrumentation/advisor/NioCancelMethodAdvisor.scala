@@ -13,5 +13,4 @@ object NioCancelMethodAdvisor {
     val registeredChannels = Metrics.forEventLoop(name(eventLoop)).registeredChannels
     registeredChannels.decrement()
   }
-
 }

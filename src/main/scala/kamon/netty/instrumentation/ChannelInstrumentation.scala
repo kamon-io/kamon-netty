@@ -1,13 +1,10 @@
 package kamon.netty.instrumentation
 
 import kamon.netty.instrumentation.mixin.ChannelContextAwareMixin
-import kanela.agent.scala.KanelaInstrumentation
+import kanela.agent.api.instrumentation.InstrumentationBuilder
 
-class ChannelInstrumentation extends KanelaInstrumentation {
+class ChannelInstrumentation extends InstrumentationBuilder {
 
-  forSubtypeOf("io.netty.channel.Channel") { builder ⇒
-    builder
-      .withMixin(classOf[ChannelContextAwareMixin])
-      .build()
-  }
+  onSubTypesOf("io.netty.channel.Channel")
+    .mixin(classOf[ChannelContextAwareMixin])
 }

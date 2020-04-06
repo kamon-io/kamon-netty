@@ -12,5 +12,4 @@ object EpollAddMethodAdvisor {
   def onExit(@This eventLoop: EventExecutor): Unit = {
     Metrics.forEventLoop(name(eventLoop)).registeredChannels.increment()
   }
-
 }

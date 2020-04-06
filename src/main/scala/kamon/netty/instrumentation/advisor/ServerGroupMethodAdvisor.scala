@@ -20,5 +20,4 @@ object ServerGroupMethodAdvisor {
       workerGroup.setName(WorkerGroupName)
     }
   }
-
 }

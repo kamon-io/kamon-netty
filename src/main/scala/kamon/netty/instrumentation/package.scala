@@ -18,8 +18,7 @@ package kamon.netty
 
 
 import io.netty.handler.codec.http.{HttpRequest, HttpResponse}
-import kamon.Kamon
-import kamon.context.{Context, TextMap}
+import kamon.context.Context
 import kamon.netty.instrumentation.mixin.{ChannelContextAware, RequestContextAware}
 
 package object instrumentation {
@@ -56,25 +55,4 @@ package object instrumentation {
 
   def isError(statusCode: Int): Boolean =
     statusCode >= 500 && statusCode < 600
-
-  def encodeContext(ctx:Context, request:HttpRequest): HttpRequest = {
-    val textMap = Kamon.contextCodec().HttpHeaders.encode(ctx)
-    textMap.values.foreach { case (key, value) => request.headers().add(key, value) }
-    request
-  }
-
-  def decodeContext(request: HttpRequest): Context = {
-    val headersTextMap = readOnlyTextMapFromHeaders(request)
-    Kamon.contextCodec().HttpHeaders.decode(headersTextMap)
-  }
-
-  private def readOnlyTextMapFromHeaders(request: HttpRequest): TextMap = new TextMap {
-    import scala.collection.JavaConverters._
-
-    private val headersMap = request.headers().iterator().asScala.map { h => h.getKey -> h.getValue }.toMap
-
-    override def values: Iterator[(String, String)] = headersMap.iterator
-    override def get(key: String): Option[String] = headersMap.get(key)
-    override def put(key: String, value: String): Unit = {}
-  }
 }
