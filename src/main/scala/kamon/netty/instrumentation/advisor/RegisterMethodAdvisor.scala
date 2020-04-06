@@ -19,6 +19,4 @@ object RegisterMethodAdvisor {
       if(future.isSuccess) registeredChannels.increment()
     })
   }
-
-
 }

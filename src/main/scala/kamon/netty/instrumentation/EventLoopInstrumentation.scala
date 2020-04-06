@@ -32,28 +32,6 @@ class EventLoopInstrumentation extends InstrumentationBuilder {
 
   onType("io.netty.channel.SingleThreadEventLoop")
       .advise(method("register"), classOf[EpollAddMethodAdvisor])
-
-//  @Around("execution(* io.netty.channel.SingleThreadEventLoop.register(..)) && this(eventLoop)")
-//  def onRegister(pjp: ProceedingJoinPoint, eventLoop: NioEventLoop): Any = {
-//    val future = pjp.proceed().asInstanceOf[ChannelFuture]
-//    val registeredChannels = Metrics.forEventLoop(name(eventLoop)).registeredChannels
-//
-//    if (future.isSuccess) registeredChannels.increment()
-//    else future.addListener(registeredChannelListener(registeredChannels))
-//    future
-//  }
-
-//  @Before("execution(* io.netty.channel.nio.NioEventLoop.cancel(..)) && this(eventLoop)")
-//  def onCancel(eventLoop: NioEventLoop): Unit = {
-//    val registeredChannels = Metrics.forEventLoop(name(eventLoop)).registeredChannels
-//    registeredChannels.decrement()
-//  }
-
-//  @Around("execution(* io.netty.channel.nio.NioEventLoop.newTaskQueue(..)) && this(eventLoop)")
-//  def onNewTaskQueue(pjp: ProceedingJoinPoint, eventLoop: NioEventLoop): Any = {
-//    val queue = pjp.proceed().asInstanceOf[util.Queue[Runnable]]
-//    MonitoredQueue(eventLoop, queue)
-//  }
 }
 
 

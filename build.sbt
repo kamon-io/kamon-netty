@@ -17,10 +17,9 @@ val kamonCore         = "io.kamon"    %% "kamon-core"                     % "2.0
 val kamonTestkit      = "io.kamon"    %% "kamon-testkit"                  % "2.0.4"
 val kamonCommon       = "io.kamon"    %% "kamon-instrumentation-common"   % "2.0.1"
 val kanela            = "io.kamon"    %  "kanela-agent"                   % "1.0.5"
-//val kamonExecutors    = "io.kamon"    %% "kamon-executors"                % "2.0.3"
 
 val netty           = "io.netty"        %  "netty-all"                      % "4.1.16.Final"
-//val nettyNative     = "io.netty"        %  "netty-transport-native-epoll"   % "4.1.16.Final"    classifier "linux-x86_64"
+val nettyNative     = "io.netty"        %  "netty-transport-native-epoll"   % "4.1.16.Final"    classifier "linux-x86_64"
 val logback         = "ch.qos.logback"  %  "logback-classic"                % "1.0.13"
 
 
@@ -39,8 +38,7 @@ lazy val root = (project in file("."))
   .settings(
     libraryDependencies ++=
       compileScope(kamonCore, kamonCommon) ++
-//      providedScope(netty, nettyNative, kanela) ++
-      providedScope(netty, kanela) ++
+      providedScope(netty,  nettyNative, kanela) ++
       testScope(scalatest, kamonTestkit, logbackClassic, logback))
 
 

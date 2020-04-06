@@ -15,26 +15,8 @@ object HttpRequestContext {
     val handler = Netty.clientInstrumentation.createHandler(toRequestBuilder(request), currentContext)
 
     ctx.channel().toContextAware().setClientHandler(handler)
-
-
-//    val clientSpan = currentContext.get(Span.ContextKey)
-//    if (clientSpan.nonEmpty()) {
-//      val clientRequestSpan = Kamon.buildSpan(Netty.generateHttpClientOperationName(request))
-//        .asChildOf(clientSpan)
-//        .withTag("span.kind", "client")
-//        .withTag("component", "netty")
-//        .withTag("http.method", request.getMethod.name())
-//        .withTag("http.url", request.getUri)
-//        .start()
-//
-//      val newContext = currentContext.withKey(Span.ContextKey, clientRequestSpan)
-
-//      ctx.channel().toContextAware().setContext(newContext)
-
-//      encodeContext(newContext, request)
     request
-
-    }
+  }
 
 
   private def toRequestBuilder(request: HttpRequest): HttpMessage.RequestBuilder[HttpRequest] =
@@ -77,7 +59,6 @@ object HttpRequestContext {
     }
 
 }
-
 
 object KamonHandlerPortable {
 

@@ -94,17 +94,17 @@ private class HttpServerHandler extends ChannelInboundHandlerAdapter {
     if (msg.isInstanceOf[HttpRequest]) {
       val request = msg.asInstanceOf[HttpRequest]
 
-      val isKeepAlive = HttpHeaders.isKeepAlive(request)
+      val isKeepAlive = HttpUtil.isKeepAlive(request)
 
-      if (request.getUri.contains("/error")) {
+      if (request.uri().contains("/error")) {
         val response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR, Unpooled.wrappedBuffer(ContentError))
         response.headers.set("Content-Type", "text/plain")
         response.headers.set("Content-Length", response.content.readableBytes)
         val channelFuture = ctx.write(response)
         addCloseListener(isKeepAlive)(channelFuture)
-      } else if (request.getUri.contains("/fetch-in-chunks")) {
+      } else if (request.uri().contains("/fetch-in-chunks")) {
         val response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
-        HttpHeaders.setTransferEncodingChunked(response)
+        HttpUtil.setTransferEncodingChunked(response, true)
         response.headers.set("Content-Type", "text/plain")
 
 

@@ -152,7 +152,7 @@ class NettyHTTPTracingSpec extends WordSpec
             httpClient.execute(httpClient.get(s"http://localhost:$port/route?param=123"))
             httpClient.execute(httpClient.get(s"http://localhost:$port/route?param=123"))
 
-            eventually(timeout(10 seconds)) {
+            eventually(timeout(5 seconds)) {
               val serverSpan = testSpanReporter().nextSpan().value
               val clientSpan = testSpanReporter.nextSpan().value
 
